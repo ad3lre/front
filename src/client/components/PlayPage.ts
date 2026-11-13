@@ -77,48 +77,17 @@ export class PlayPage extends LitElement {
           </div>
         </div>
 
-        <!-- Top strip: news + identity on the left, Streaming Now on the right. The 2fr/1fr
-             split only exists while the panel is live (.streaming-live via has-[]) —
-             otherwise the left column takes the full row. -->
-        <div
-          class="group/strip w-full pb-4 lg:pb-0 sm:compact:pb-0 flex flex-col gap-4 sm:-mx-4 sm:w-[calc(100%+2rem)] lg:mx-0 lg:w-full lg:grid lg:grid-cols-1 lg:has-[.streaming-live]:grid-cols-[2fr_1fr] lg:gap-4 lg:items-stretch"
-        >
-          <!-- Mobile: spacer for fixed top bar -->
-          <div
-            class="lg:hidden h-[calc(env(safe-area-inset-top)+56px)] -mb-4"
-          ></div>
-
-          <!-- Left column: news banner + identity row, stacked tight. -->
-          <div class="flex flex-col gap-2 min-w-0">
-            <!-- Off on compact screens (see styles.css), like Streaming Now. -->
-            <news-box class="compact:hidden"></news-box>
-
-            <!-- Identity row: username over the currently selected cosmetic background. -->
-            <div
-              class="relative bg-surface border-y border-white/10 overflow-visible flex items-center sm:min-h-[60px] sm:compact:min-h-[45px] sm:flex-1 sm:z-20 sm:border-y-0 sm:rounded-xl"
-            >
-              <!-- Selected skin/pattern fills the bubble like the player's territory in game. -->
-              <cosmetic-background
-                class="absolute inset-0 z-0 overflow-hidden sm:rounded-xl pointer-events-none"
-              ></cosmetic-background>
-              <div
-                class="relative z-10 flex h-full w-full min-w-0 items-center bg-surface/80 p-1 sm:rounded-xl"
-              >
-                <username-input
-                  class="flex-1 min-w-0 h-10 sm:h-[50px] sm:compact:h-[38px]"
-                ></username-input>
-              </div>
+        <div class="front-home">
+          <aside class="front-intro" style=${`--front-map: url("${assetUrl("images/front-relief.png")}")`}>
+            <div class="front-intro-copy">
+              <p class="front-eyebrow">MULTIPLAYER TERRITORIAL STRATEGY</p>
+              <h1>OpenFront</h1>
+              <p>Conquer territory. Outmaneuver rivals.<br />Compete in massive multiplayer battles.</p>
+              <div class="front-identity"><username-input></username-input></div>
             </div>
-          </div>
-
-          <!-- Right column: Streaming Now (desktop only), stretched to the left column's
-               full height so the top strip has no dead space. -->
-          <streaming-now
-            class="hidden lg:flex lg:h-full lg:flex-col w-full min-w-0"
-          ></streaming-now>
+          </aside>
+          <game-mode-selector></game-mode-selector>
         </div>
-
-        <game-mode-selector></game-mode-selector>
 
         <!-- Desktop gets the compact footer button instead. -->
         <steam-wishlist

@@ -58,11 +58,7 @@ export class DesktopNavBar extends LitElement {
       >
         <div class="flex flex-col items-center justify-center">
           <div class="h-8">
-            <img
-              class="block h-full aspect-[1364/259]"
-              src=${assetUrl("images/OpenFrontLogo.svg")}
-              alt="OpenFront"
-            />
+            <span class="front-brand" aria-label="OpenFront"><svg viewBox="0 0 64 24" aria-hidden="true"><path fill="#2aa8ec" d="M1 19C12 6 22 4 32 10c10 6 19 6 31-1-9 12-20 15-32 9C20 12 11 13 1 19Z"/></svg><span>OpenFront</span></span>
           </div>
           <div
             id="game-version"
