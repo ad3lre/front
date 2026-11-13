@@ -1,0 +1,20 @@
+[Unit]
+Description=RXND Front standalone API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=founder
+Group=founder
+WorkingDirectory=/home/founder/prod/front
+EnvironmentFile=/home/founder/.config/front/runtime.env
+ExecStart=/home/founder/.nvm/versions/node/v24.16.0/bin/node /home/founder/prod/front/standalone/api.mjs
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+LimitNOFILE=8192
+
+[Install]
+WantedBy=multi-user.target

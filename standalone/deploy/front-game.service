@@ -1,0 +1,22 @@
+[Unit]
+Description=RXND Front game server
+After=network-online.target front-api.service
+Wants=network-online.target
+Requires=front-api.service
+
+[Service]
+Type=simple
+User=founder
+Group=founder
+WorkingDirectory=/home/founder/prod/front
+EnvironmentFile=/home/founder/.config/front/runtime.env
+Environment=PATH=/home/founder/.nvm/versions/node/v24.16.0/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/founder/.nvm/versions/node/v24.16.0/bin/node /home/founder/prod/front/node_modules/tsx/dist/cli.mjs /home/founder/prod/front/src/server/Server.ts
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+LimitNOFILE=8192
+
+[Install]
+WantedBy=multi-user.target

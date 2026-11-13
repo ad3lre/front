@@ -1,0 +1,29 @@
+# RXND Front — upstream OpenFront fork (one worker)
+@front_www {
+  host www.rxnd.de
+  path /front /front/*
+}
+redir @front_www https://rxnd.de{uri} 308
+redir /front /front/ 308
+@front_api path /front/backend /front/backend/*
+handle @front_api {
+  uri strip_prefix /front/backend
+  reverse_proxy 127.0.0.1:13802
+}
+@front_worker path /front/w0 /front/w0/*
+handle @front_worker {
+  uri strip_prefix /front/w0
+  reverse_proxy 127.0.0.1:13801 {
+    header_up CF-Connecting-IP {remote_host}
+    flush_interval -1
+  }
+}
+handle /front/api/create_game {
+  uri strip_prefix /front
+  reverse_proxy 127.0.0.1:13801 {
+    header_up CF-Connecting-IP {remote_host}
+  }
+}
+handle_path /front/* {
+  reverse_proxy 127.0.0.1:13800
+}
