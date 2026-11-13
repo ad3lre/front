@@ -1,7 +1,7 @@
 import { test, after, before } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { decodeJwt, jwtVerify, importJWK } from "jose";
@@ -14,7 +14,8 @@ before(async () => {
   dir = await mkdtemp(join(tmpdir(), "front-api-test-"));
   server = spawn(process.execPath, ["standalone/api.mjs"], { env: {
     ...process.env, STANDALONE_API_PORT: String(port), STANDALONE_API_ORIGIN: issuer,
-    STANDALONE_KEY_PATH: join(dir, "key.pem"), DOMAIN: "localhost", COOKIE_SECURE: "false",
+    STANDALONE_KEY_PATH: join(dir, "key.pem"), STANDALONE_GAMES_DIR: join(dir, "games"),
+    API_KEY: "test-internal-key", DOMAIN: "localhost", COOKIE_SECURE: "false",
   }, stdio: "ignore" });
   for (let i = 0; i < 100; i++) {
     if (server.exitCode !== null) throw new Error(`API exited ${server.exitCode}`);
@@ -57,4 +58,21 @@ test("untrusted origins and invalid or refresh tokens cannot read profiles", asy
     const response = await fetch(`${origin}/users/@me`, { headers: { authorization: `Bearer ${value}` } });
     assert.equal(response.status, 401);
   }
+});
+
+
+test("only the game server can archive; replays omit private identities and reports", async () => {
+  const fixture = JSON.parse(await readFile("records/demoGame1.json", "utf8"));
+  fixture.info.players[0].persistentID = "550e8400-e29b-41d4-a716-446655440000";
+  fixture.info.reports = [{ private: "not for the replay" }];
+  const options = { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(fixture) };
+  assert.equal((await fetch(`${origin}/game/demoGame1`, options)).status, 403);
+  options.headers["x-api-key"] = "test-internal-key";
+  assert.equal((await fetch(`${origin}/game/demoGame1`, options)).status, 201);
+  assert.equal((await fetch(`${origin}/game/demoGame1`, options)).status, 409);
+  const replay = await (await fetch(`${origin}/game/demoGame1`)).json();
+  assert.equal(replay.info.players[0].persistentID, null);
+  assert.equal(replay.info.reports, undefined);
+  assert.deepEqual(replay.turns, fixture.turns);
+  assert.equal((await fetch(`${origin}/game/unknown01`)).status, 404);
 });
