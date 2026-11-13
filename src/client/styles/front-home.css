@@ -89,3 +89,5 @@ body:not(.in-game) .front-account-trigger, body:not(.in-game) [data-account-trig
 .front-source-link { display: flex; justify-content: space-between; padding: 12px 16px; border-top: 1px solid rgba(255,255,255,.08); color: #80ccf4; font-size: 14px; text-decoration: none; }
 .front-source-link:hover { background: rgba(255,255,255,.06); color: white; }
 .front-source-credit { color: #9aa9b5; font-size: 11px; padding: 0 16px 12px; }
+
+body:not(.in-game) desktop-nav-bar [data-account-trigger] { height: 40px; }
