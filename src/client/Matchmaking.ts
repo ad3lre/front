@@ -515,10 +515,7 @@ export class MatchmakingModal extends BaseModal {
     // portal player with no /users/@me from falling through to the
     // leaderboard read, which would dereference `false`. It also narrows the
     // type for that read.
-    if (
-      userMe === false ||
-      (!responseHasLinkedIdentity(userMe) && !portalSignedIn)
-    ) {
+    if (userMe === false) {
       window.dispatchEvent(
         new CustomEvent("show-message", {
           detail: {

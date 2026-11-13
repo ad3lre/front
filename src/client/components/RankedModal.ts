@@ -33,9 +33,7 @@ export class RankedModal extends BaseModal {
 
   // Eligible to see/play ranked: a linked account or a signed-in portal one.
   private isRankedEligible(): boolean {
-    return (
-      responseHasLinkedIdentity(this.userMeResponse) || this.portalSignedIn
-    );
+    return this.userMeResponse !== false;
   }
 
   constructor() {
@@ -144,7 +142,7 @@ export class RankedModal extends BaseModal {
 
         </div>
         <p class="mt-6 text-xs text-white/60 leading-relaxed text-center">
-          ${translateText("mode_selector.ranked_pairing_note")}
+          Players are matched in queue order. Two-on-two teams are assigned when the match starts.
         </p>
         ${
           this.showTrustRequired
