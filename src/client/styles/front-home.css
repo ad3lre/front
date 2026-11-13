@@ -1,15 +1,15 @@
 /* RXND home screen: layout is scoped to the play page so in-game HUDs and
    the upstream modal system retain their own styles. */
-body:not(.in-game):not(.page-open) { background: #091118 !important; color: #f5f7fa; }
-body:not(.page-open) #hex-grid { display: none; }
-body:not(.page-open) desktop-nav-bar nav { height: 88px; justify-content: flex-start; gap: clamp(24px,3.3vw,58px); padding: 0 3.1vw; background: #0b1219; backdrop-filter: none; }
-body:not(.page-open) desktop-nav-bar nav > div:first-child { width: 21%; align-items: flex-start; flex-shrink: 0; }
-body:not(.page-open) desktop-nav-bar nav > div:first-child > div:first-child { height: 29px; }
-body:not(.page-open) desktop-nav-bar #game-version { display: none; }
-body:not(.page-open) desktop-nav-bar .nav-menu-item { position: relative; height: 88px; color: #969da8; font-size: 18px; font-weight: 600; letter-spacing: 0; text-transform: none; white-space: nowrap; }
-body:not(.page-open) desktop-nav-bar .nav-menu-item.active { color: #f5f7fa; }
-body:not(.page-open) desktop-nav-bar .nav-menu-item.active::after { content: ''; position: absolute; bottom: 9px; left: 0; right: 0; height: 3px; border-radius: 4px; background: #2da8f5; }
-body:not(.page-open) desktop-nav-bar nav > div:last-child { margin-left: auto; border: 0; }
+body:not(.in-game) { background: #091118 !important; color: #f5f7fa; }
+body:not(.in-game) #hex-grid { display: none; }
+body:not(.in-game) desktop-nav-bar nav { height: 88px; justify-content: flex-start; gap: clamp(24px,3.3vw,58px); padding: 0 3.1vw; background: #0b1219; backdrop-filter: none; }
+body:not(.in-game) desktop-nav-bar nav > div:first-child { width: 21%; align-items: flex-start; flex-shrink: 0; }
+body:not(.in-game) desktop-nav-bar nav > div:first-child > div:first-child { height: 29px; }
+body:not(.in-game) desktop-nav-bar #game-version { display: none; }
+body:not(.in-game) desktop-nav-bar .nav-menu-item { position: relative; height: 88px; color: #969da8; font-size: 18px; font-weight: 600; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+body:not(.in-game) desktop-nav-bar .nav-menu-item.active { color: #f5f7fa; }
+body:not(.in-game) desktop-nav-bar .nav-menu-item.active::after { content: ''; position: absolute; bottom: 9px; left: 0; right: 0; height: 3px; border-radius: 4px; background: #2da8f5; }
+body:not(.in-game) desktop-nav-bar nav > div:last-child { margin-left: auto; border: 0; }
 #page-play { padding: 0 !important; gap: 0 !important; }
 .front-home { display: grid; grid-template-columns: minmax(300px, 29%) minmax(0, 1fr); min-height: calc(100vh - 88px); width: 100%; }
 .front-intro { position: relative; min-height: 740px; overflow: hidden; }
@@ -74,3 +74,18 @@ body:not(.page-open) main-layout > main { padding: 0 !important; }
 body:not(.page-open) main-layout > main > div { max-width: none !important; width: 100% !important; padding: 0 !important; }
 .front-brand { display: flex; align-items: center; gap: 6px; color: #f5f7fa; font-size: 26px; font-weight: 800; letter-spacing: -.045em; white-space: nowrap; line-height: 1; }
 .front-brand svg { width: 57px; height: 24px; flex: none; }
+
+/* Shared navigation and menu treatment across all non-game pages. */
+body:not(.in-game) { --color-surface: #14212b; --color-malibu-blue: #168bd3; --color-aquarius: #48baf2; }
+body:not(.in-game) .page-content { color: #f5f7fa; }
+body:not(.in-game) .page-content :is(button, h1, h2, h3, h4, label) { text-transform: none !important; letter-spacing: normal; }
+body:not(.in-game) .page-content button[class~="bg-malibu-blue"] { background: linear-gradient(135deg,#29adf1,#0c5598); border-radius: 14px; }
+body:not(.in-game) .page-content button[class~="bg-surface"] { background: #17252f; border-radius: 14px; }
+body:not(.in-game) .page-content :is(input, select, textarea) { color: #f5f7fa; border-color: rgba(164,190,209,.18); }
+body:not(.in-game) .page-content h1, body:not(.in-game) .page-content h2 { color: #f5f7fa; }
+body:not(.in-game) .front-account-trigger, body:not(.in-game) [data-account-trigger] { border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; padding: 0 4px; }
+[data-account-trigger]:has([data-account-signin-text]:not(.hidden)) [data-account-identity] { display: none !important; }
+.front-sign-in { color: #f5f7fa; font-size: 15px; font-weight: 600; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+.front-source-link { display: flex; justify-content: space-between; padding: 12px 16px; border-top: 1px solid rgba(255,255,255,.08); color: #80ccf4; font-size: 14px; text-decoration: none; }
+.front-source-link:hover { background: rgba(255,255,255,.06); color: white; }
+.front-source-credit { color: #9aa9b5; font-size: 11px; padding: 0 16px 12px; }

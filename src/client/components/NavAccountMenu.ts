@@ -551,6 +551,8 @@ export class NavAccountMenu extends LitElement {
             </button>
           `,
         )}
+        <a href="https://github.com/ad3lre/front/tree/rxnd/standalone" target="_blank" rel="noopener noreferrer" class="front-source-link">Source code <span>↗</span></a>
+        <div class="front-source-credit">© OpenFront and Contributors</div>
       </div>
     `;
   }
@@ -805,11 +807,10 @@ export class NavAccountMenu extends LitElement {
       <button
         id="nav-account-button"
         data-account-trigger
-        data-account-border
         aria-haspopup="menu"
         aria-expanded=${this.menuOpen ? "true" : "false"}
         @click=${this.handleTriggerClick}
-        class="nav-menu-item relative h-10 rounded-full flex items-center justify-center gap-2 px-3 bg-transparent border border-white/20 text-white/80 hover:text-white cursor-pointer transition-colors [&.active]:text-white"
+        class="nav-menu-item front-account-trigger relative h-10 flex items-center justify-center gap-2 bg-transparent text-white/80 hover:text-white cursor-pointer transition-colors [&.active]:text-white"
         data-page="page-account"
         aria-label=${this.triggerLabel()}
         data-i18n-title="main.account"
@@ -838,7 +839,7 @@ export class NavAccountMenu extends LitElement {
         <span
           id="nav-account-signin-text"
           data-account-signin-text
-          class="hidden text-xs font-bold tracking-widest"
+          class="hidden front-sign-in"
           data-i18n="main.sign_in"
         >
         </span>
@@ -860,7 +861,7 @@ export class NavAccountMenu extends LitElement {
         aria-label=${this.triggerLabel()}
         data-i18n-title="main.account"
       >
-        <span class="relative flex items-center justify-center w-8 h-8">
+        <span data-account-identity class="relative flex items-center justify-center w-8 h-8">
           ${this.renderIdentityIcons({
             ids: false,
             iconClass: "w-7 h-7",
@@ -871,7 +872,7 @@ export class NavAccountMenu extends LitElement {
         <!-- The sign-in label is desktop-only; on the top bar the icon alone is
              the affordance, so keep the element (the shared updater toggles it)
              but never show text. -->
-        <span data-account-signin-text class="hidden"></span>
+        <span data-account-signin-text class="hidden front-sign-in" data-i18n="main.sign_in"></span>
         ${this.renderChevron()}
       </button>
     `;
