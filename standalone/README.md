@@ -1,0 +1,9 @@
+# RXND standalone integration (in progress)
+
+This checkout is based on OpenFront commit `2f0252dda9c4330b78ad3012d8570a7e929b071e` and retains its original licenses and notices. The original game server, client, simulation and bundled resources are used. The upstream account/statistics API is not part of the public source; `api.mjs` provides a separate guest-session service for this installation.
+
+The guest API signs short-lived Ed25519 access tokens and stores a signed refresh token in an HttpOnly, SameSite cookie. Its private key is generated locally under `standalone-data/` (or `STANDALONE_KEY_PATH`) and must be backed up securely; it is never committed. The API, master and worker bind to loopback. The reverse proxy must expose only the intended routes and forward WebSocket upgrades. The `/front/backend` API origin, game API, asset URLs and lobby links all need to remain under the same public origin. Do not expose the local development configuration to the internet without completing the security and feature work below.
+
+Requirements: Node 24.15+ and npm 12.1+, then `npm run inst` and `npm run build-prod`. Unit checks for the guest issuer: `node --test standalone/test/api.test.mjs`. `standalone/test/multiplayer.test.ts` exercises two separate guest sessions joining a lobby, starting a match and receiving a turn against the isolated preview described in the test; it needs the preview to be running.
+
+Still required before public deployment: production session and traffic hardening, match/replay persistence, public matchmaking/ranked and account-related APIs, final proxy and boot service configuration, source-distribution link, and browser verification of solo and multiplayer play. Upstream features that depend on its closed-source API are not yet equivalent. The dev-mode Turnstile bypass is suitable only for isolated testing, and this code intentionally does not contact OpenFront production account servers.

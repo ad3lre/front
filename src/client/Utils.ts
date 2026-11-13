@@ -1025,5 +1025,5 @@ export function homeHref(): string {
   if (siteHost !== undefined && window.location.host !== siteHost) {
     return `https://${siteHost}/`;
   }
-  return "/";
+  return "/front/";
 }

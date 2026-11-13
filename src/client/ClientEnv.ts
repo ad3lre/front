@@ -360,9 +360,9 @@ export class ClientEnv {
   static gamePath(gameID: GameID): string {
     const id = encodeURIComponent(gameID);
     try {
-      return `/${ClientEnv.gameWorkerPath(gameID)}/game/${id}`;
+      return `/front/${ClientEnv.gameWorkerPath(gameID)}/game/${id}`;
     } catch (e) {
-      if (e instanceof NoServerError) return `/game/${id}`;
+      if (e instanceof NoServerError) return `/front/game/${id}`;
       throw e;
     }
   }
@@ -436,7 +436,7 @@ export class ClientEnv {
       ClientEnv.serverHost(),
       window.location.protocol,
       window.location.host,
-    );
+    ) + "/front";
   }
   // Origin (scheme + host, no trailing slash) of the same game server's HTTP
   // API — the worker routes under `/api` (create_game, game/:id/exists,
@@ -456,7 +456,7 @@ export class ClientEnv {
       ClientEnv.serverHost(),
       window.location.protocol,
       window.location.host,
-    );
+    ) + "/front";
   }
   // Origin a link that LEAVES this client should point at — a lobby invite, a
   // game link, the domain the magic-link email comes back to. See

@@ -303,7 +303,7 @@ export async function startWorker() {
   const lobbyService = new WorkerLobbyService(server, wss, gm, log);
   const singleplayerPresence = new SingleplayerPresence();
 
-  setTimeout(
+  if (!process.env.STANDALONE_API_ORIGIN) setTimeout(
     () => {
       // The ranked loop follows the deployment-active flag the master pushes
       // to this worker (OPE-469): a draining, standby or fenced server keeps
@@ -1048,7 +1048,7 @@ export async function startWorker() {
 
   // The load balancer will handle routing to this server based on path
   const PORT = ServerEnv.workerPortByIndex(workerId);
-  server.listen(PORT, () => {
+  server.listen(PORT, "127.0.0.1", () => {
     log.info(`running on http://localhost:${PORT}`);
     log.info(`Handling requests with path prefix /w${workerId}/`);
     // Signal to the master process that this worker is ready

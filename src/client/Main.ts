@@ -572,7 +572,7 @@ class Client {
     // site key's domain allowlist, so rendering the widget there just fails —
     // and replays never send a token anyway (see getTurnstileToken below).
     const turnstilePrefetch =
-      isSteamShell() || isReplayShellHost(window.location.hostname)
+      ClientEnv.env() === GameEnv.Dev || isSteamShell() || isReplayShellHost(window.location.hostname)
         ? null
         : getTurnstileToken();
     // A prefetch that fails is not an error anyone has asked about yet: the
@@ -833,8 +833,7 @@ class Client {
       }
       const isAdFree =
         userMeResponse !== false && userMeResponse.player?.adfree === true;
-      window.adsEnabled =
-        !isAdFree && !gamePortal.isOnGamePortal() && !isDesktopShell();
+      window.adsEnabled = false;
       syncHashedEmail(userMeResponse, window.adsEnabled).catch((e) =>
         console.warn("Hashed email sync failed", e),
       );
@@ -1579,7 +1578,7 @@ class Client {
     // Every version's page is also served under /v/<commit>/ (multi-server
     // v2), so the game path may sit behind that prefix.
     const pathMatch = window.location.pathname.match(
-      /^(?:\/v\/[^/]+)?\/(?:w\d+\/)?game\/([^/]+)/,
+      /^\/front(?:\/v\/[^/]+)?\/(?:w\d+\/)?game\/([^/]+)/,
     );
     const lobbyId =
       pathMatch && GAME_ID_REGEX.test(pathMatch[1]) ? pathMatch[1] : null;
@@ -1938,7 +1937,7 @@ class Client {
       console.error("game client failed to load:", err);
       if (this.mostRecentJoinEvent !== event.timeStamp) return;
       // The URL names the singleplayer game now, which no server has.
-      if (isSingleplayer) history.replaceState(null, "", "/");
+      if (isSingleplayer) history.replaceState(null, "", "/front/");
       if (claimGameClientReload()) {
         reloadForUpdate();
         return;
@@ -1956,7 +1955,7 @@ class Client {
         startingModal.hide();
       }
       // handleLeaveLobby only resets the URL once a lobby handle exists.
-      history.replaceState(null, "", "/");
+      history.replaceState(null, "", "/front/");
       void this.handleLeaveLobby();
       void showInGameAlert(translateText("error_modal.game_client_failed"));
       return;
@@ -2068,14 +2067,14 @@ class Client {
       } else {
         // Ensure there's a homepage entry in history before adding the lobby entry
         if (window.location.hash === "" || window.location.hash === "#") {
-          history.replaceState(null, "", window.location.origin + "#refresh");
+          history.replaceState(null, "", window.location.origin + "/front/#refresh");
         }
         history.pushState(
           null,
           "",
           currentPagePath(
             lobbyIdHidden
-              ? "/streamer-mode"
+              ? "/front/streamer-mode"
               : `${ClientEnv.gamePath(lobby.gameID)}?live`,
           ),
         );
@@ -2195,7 +2194,7 @@ class Client {
       // (handleUrl -> redirectToGameVersion), not pinned to whatever this
       // page happens to be serving.
       targetUrl = lobbyIdHidden
-        ? "/streamer-mode"
+        ? "/front/streamer-mode"
         : ClientEnv.gamePath(lobbyId);
     }
     const currentUrl = window.location.pathname;
@@ -2234,7 +2233,7 @@ class Client {
     this.currentUrl = null;
 
     try {
-      history.replaceState(null, "", "/");
+      history.replaceState(null, "", "/front/");
     } catch (e) {
       console.warn("Failed to restore URL on leave:", e);
     }
@@ -2299,7 +2298,7 @@ class Client {
     }
     const mode = event.detail?.mode;
     if (mode !== undefined) {
-      window.location.href = mode === "1v1" ? "/?requeue" : `/?requeue=${mode}`;
+      window.location.href = mode === "1v1" ? "/front/?requeue" : `/front/?requeue=${mode}`;
     }
   }
 

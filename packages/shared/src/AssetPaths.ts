@@ -72,5 +72,5 @@ export function buildAssetUrl(
     return baseUrl ? `${baseUrl.replace(/\/+$/, "")}${directUrl}` : directUrl;
   }
 
-  return `/${encodeAssetPath(normalizedPath)}`;
+  return `${baseUrl.replace(/\/+$/, "")}/${encodeAssetPath(normalizedPath)}`;
 }

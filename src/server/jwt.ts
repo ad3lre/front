@@ -23,7 +23,7 @@ export async function verifyClientToken(
   token: string,
 ): Promise<TokenVerificationResult> {
   if (PersistentIdSchema.safeParse(token).success) {
-    if (ServerEnv.env() === GameEnv.Dev) {
+    if (ServerEnv.env() === GameEnv.Dev && !process.env.STANDALONE_API_ORIGIN) {
       return { type: "success", persistentId: token, claims: null };
     } else {
       return {
@@ -41,6 +41,9 @@ export async function verifyClientToken(
       issuer,
       audience,
     });
+    if (process.env.STANDALONE_API_ORIGIN && payload.typ !== "access") {
+      return { type: "error", message: "Invalid token type" };
+    }
     const result = TokenPayloadSchema.safeParse(payload);
     if (!result.success) {
       return {

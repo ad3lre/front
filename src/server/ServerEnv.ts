@@ -110,6 +110,7 @@ export class ServerEnv {
     return process.env.CDN_BASE ?? "";
   }
   static jwtIssuer(): string {
+    if (process.env.STANDALONE_API_ORIGIN) return process.env.STANDALONE_API_ORIGIN;
     const audience = ServerEnv.jwtAudience();
     return audience === "localhost"
       ? "http://localhost:8787"
@@ -142,7 +143,9 @@ export class ServerEnv {
     return 100;
   }
   static gameCreationRate(): number {
-    return ServerEnv.gameEnv === GameEnv.Dev ? 5 * 1000 : 2 * 60 * 1000;
+    return ServerEnv.gameEnv === GameEnv.Dev && !process.env.STANDALONE_API_ORIGIN
+      ? 5 * 1000
+      : 2 * 60 * 1000;
   }
   static workerIndex(gameID: GameID): number {
     return simpleHash(gameID) % ServerEnv.numWorkers();
@@ -154,7 +157,7 @@ export class ServerEnv {
     return ServerEnv.workerPortByIndex(ServerEnv.workerIndex(gameID));
   }
   static workerPortByIndex(index: number): number {
-    return 3001 + index;
+    return 13801 + index;
   }
   // Mint a game id under this deployment's instance letter.
   static generateGameId(): GameID {

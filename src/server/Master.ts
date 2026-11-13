@@ -283,8 +283,8 @@ export async function startMaster() {
       `Restarted worker ${workerId} (New PID: ${newWorker.process.pid})`,
     );
   });
-  const PORT = 3000;
-  server.listen(PORT, () => {
+  const PORT = 13800;
+  server.listen(PORT, "127.0.0.1", () => {
     log.info(`Master HTTP server listening on port ${PORT}`);
   });
 
