@@ -141,13 +141,7 @@ export class RankedModal extends BaseModal {
                 : translateText("mode_selector.ranked_title")),
             () => this.handleRanked("2v2"),
           )}
-          ${this.renderCard(
-            translateText("mode_selector.ranked_clanwars_title"),
-            this.errorMessage ??
-              translateText("mode_selector.ranked_clanwars_subtitle"),
-            () => this.handleRanked("clanwars"),
-            true,
-          )}
+
         </div>
         <p class="mt-6 text-xs text-white/60 leading-relaxed text-center">
           ${translateText("mode_selector.ranked_pairing_note")}
@@ -173,13 +167,7 @@ export class RankedModal extends BaseModal {
   ) {
     // Ranked admits trusted accounts only: a green open lock when the
     // player's account is trusted, a red closed one otherwise.
-    const lock = this.trustKnown()
-      ? trustLockIcon(viewerIsTrusted(this.userMeResponse), {
-          tooltipTitle: translateText(
-            "mode_selector.ranked_trust_tooltip_title",
-          ),
-        })
-      : "";
+    const lock = "";
     return html`
       <button
         @click=${onClick}
@@ -212,10 +200,6 @@ export class RankedModal extends BaseModal {
   private async handleRanked(mode: MatchmakingMode) {
     // Ranked admits trusted accounts only; the popup says how to get there
     // (sign in first when signed out). Unknown tier: the service decides.
-    if (this.trustKnown() && !viewerIsTrusted(this.userMeResponse)) {
-      this.showTrustRequired = true;
-      return;
-    }
     if ((await userAuth()) === false) {
       this.close();
       window.showPage?.("page-account");

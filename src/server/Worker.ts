@@ -303,7 +303,7 @@ export async function startWorker() {
   const lobbyService = new WorkerLobbyService(server, wss, gm, log);
   const singleplayerPresence = new SingleplayerPresence();
 
-  if (!process.env.STANDALONE_API_ORIGIN) setTimeout(
+  setTimeout(
     () => {
       // The ranked loop follows the deployment-active flag the master pushes
       // to this worker (OPE-469): a draining, standby or fenced server keeps
@@ -341,7 +341,7 @@ export async function startWorker() {
 
   app.use(stripWorkerPrefix(workerId));
 
-  app.set("trust proxy", 3);
+  app.set("trust proxy", "loopback");
   app.use(compression());
 
   app.use(

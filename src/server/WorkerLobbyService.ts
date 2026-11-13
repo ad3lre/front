@@ -306,7 +306,30 @@ export class WorkerLobbyService {
   }
 
   private setupUpgradeHandler() {
+    const connections = new Map<string, number>();
+    const recent = new Map<string, number[]>();
     this.server.on("upgrade", (request, socket, head) => {
+      if (process.env.STANDALONE_API_ORIGIN) {
+        const origin = request.headers.origin;
+        const expected = new URL(process.env.STANDALONE_API_ORIGIN).origin;
+        const rawIp = request.headers["cf-connecting-ip"];
+        const ip = typeof rawIp === "string" ? rawIp : (request.socket.remoteAddress ?? "unknown");
+        const now = Date.now();
+        const attempts = (recent.get(ip) ?? []).filter(t => now - t < 60_000);
+        if ((origin && origin !== expected) || attempts.length >= 90 || (connections.get(ip) ?? 0) >= 40 || this.lobbiesWss.clients.size + this.gameWss.clients.size >= 2000) {
+          socket.write("HTTP/1.1 429 Too Many Requests\r\nConnection: close\r\n\r\n");
+          socket.destroy();
+          return;
+        }
+        attempts.push(now);
+        recent.set(ip, attempts);
+        connections.set(ip, (connections.get(ip) ?? 0) + 1);
+        socket.once("close", () => {
+          const remaining = (connections.get(ip) ?? 1) - 1;
+          if (remaining > 0) connections.set(ip, remaining); else connections.delete(ip);
+        });
+        if (recent.size > 4096) for (const [key, times] of recent) if (now - times[times.length - 1] > 60_000) recent.delete(key);
+      }
       const pathname = (request.url ?? "").split("?")[0];
       if (pathname === "/lobbies" || pathname.endsWith("/lobbies")) {
         this.lobbiesWss.handleUpgrade(request, socket, head, (ws) => {

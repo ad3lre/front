@@ -5,6 +5,8 @@ import { mkdtemp, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { decodeJwt, jwtVerify, importJWK } from "jose";
+import { WebSocket } from "ws";
+import { once } from "node:events";
 
 const port = 13995;
 const origin = `http://localhost:${port}`;
@@ -75,4 +77,65 @@ test("only the game server can archive; replays omit private identities and repo
   assert.equal(replay.info.reports, undefined);
   assert.deepEqual(replay.turns, fixture.turns);
   assert.equal((await fetch(`${origin}/game/unknown01`)).status, 404);
+});
+
+
+test("matchmaking only assigns compatible authenticated players through a trusted worker", async () => {
+  const version = "a".repeat(40);
+  async function client() {
+    const auth = await (await fetch(`${origin}/auth/refresh`, { method: "POST" })).json();
+    const ws = new WebSocket(`${origin.replace(/^http/, "ws")}/matchmaking/join?mode=1v1&version=${version}`);
+    const messages = [];
+    ws.on("message", data => messages.push(JSON.parse(data)));
+    await once(ws, "open");
+    ws.send(JSON.stringify({ type: "join", jwt: auth.jwt }));
+    const me = await (await fetch(`${origin}/users/@me`, { headers: { authorization: `Bearer ${auth.jwt}` } })).json();
+    return { ws, messages, publicId: me.player.publicId };
+  }
+  async function until(predicate) {
+    for (let i = 0; i < 100; i++) { if (predicate()) return; await new Promise(r => setTimeout(r, 20)); }
+    throw new Error("timed out waiting for queue state");
+  }
+  const a = await client(), b = await client();
+  try {
+    await until(() => a.messages.some(m => m.type === "queue-size" && m.count === 2));
+    const request = (key, ver) => fetch(`${origin}/matchmaking/checkin`, {
+      method: "POST", headers: { "content-type": "application/json", "x-api-key": key },
+      body: JSON.stringify({ gameId: "a123456789", mode: "1v1", version: ver }),
+    });
+    assert.equal((await request("wrong", version)).status, 403);
+    assert.equal((await (await request("test-internal-key", "b".repeat(40))).json()).assignment, null);
+    const result = await (await request("test-internal-key", version)).json();
+    assert.deepEqual(result.assignment.players, [a.publicId, b.publicId]);
+    assert.deepEqual(result.assignment.teams, [[a.publicId], [b.publicId]]);
+    await until(() => [a, b].every(c => c.messages.some(m => m.type === "match-assignment" && m.gameId === "a123456789")));
+    assert.equal((await (await request("test-internal-key", version)).json()).assignment, null);
+  } finally { a.ws.close(); b.ws.close(); }
+});
+
+test("confirmed ranked results persist once and appear on profiles and ladders", async () => {
+  const jwt = (await (await fetch(`${origin}/auth/refresh`, { method: "POST" })).json()).jwt;
+  const sub = decodeJwt(jwt).sub;
+  const bytes = Buffer.from(sub, "base64url").toString("hex");
+  const uuid = `${bytes.slice(0,8)}-${bytes.slice(8,12)}-${bytes.slice(12,16)}-${bytes.slice(16,20)}-${bytes.slice(20)}`;
+  const me = await (await fetch(`${origin}/users/@me`, { headers: { authorization: `Bearer ${jwt}` } })).json();
+  const fixture = JSON.parse(await readFile("records/demoGame1.json", "utf8"));
+  fixture.info.gameID = "a765432109";
+  fixture.info.players[0].persistentID = uuid;
+  fixture.info.winner = ["player", fixture.info.players[0].clientID];
+  fixture.info.statsAgreed = true;
+  fixture.info.config.rankedType = "1v1";
+  fixture.info.config.gameType = "Public";
+  fixture.info.config.gameMode = "Free For All";
+  fixture.info.config.difficulty = "Medium";
+  const options = { method: "POST", headers: { "content-type": "application/json", "x-api-key": "test-internal-key" }, body: JSON.stringify(fixture) };
+  assert.equal((await fetch(`${origin}/game/a765432109`, options)).status, 201);
+  assert.equal((await fetch(`${origin}/game/a765432109`, options)).status, 409);
+  const profile = await (await fetch(`${origin}/public/player/${me.player.publicId}`)).json();
+  assert.equal(profile.stats.Ranked["1v1"].wins, "1");
+  assert.equal(profile.stats.Public["Free For All"].Medium.total, "1");
+  const board = await (await fetch(`${origin}/leaderboard/ranked`)).json();
+  assert.equal(board["1v1"].find(p => p.public_id === me.player.publicId).wins, 1);
+  const replay = await (await fetch(`${origin}/game/a765432109`)).json();
+  assert.equal(replay.info.players[0].persistentID, null);
 });

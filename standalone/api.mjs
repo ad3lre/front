@@ -1,4 +1,7 @@
 import express from "express";
+import { createServer } from "node:http";
+import { installMatchmaking } from "./matchmaking.mjs";
+import { createStatistics } from "./statistics.mjs";
 import rateLimit from "express-rate-limit";
 import { generateKeyPairSync, randomUUID, createPublicKey, createHmac, timingSafeEqual } from "node:crypto";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
@@ -56,14 +59,17 @@ function sign(sub, type, ttl) {
     .setIssuer(issuer).setAudience(audience).setSubject(sub).setJti(randomUUID())
     .setIssuedAt().setExpirationTime(ttl).sign(privateKey);
 }
-async function token(req) {
-  const value = req.headers.authorization?.match(/^Bearer (.+)$/)?.[1];
+async function verifyAccess(value) {
   if (!value) return null;
   try {
     const { payload } = await jwtVerify(value, publicKey, { issuer, audience, algorithms: ["EdDSA"] });
     return payload.typ === "access" && typeof payload.sub === "string" ? payload : null;
   } catch { return null; }
 }
+async function token(req) {
+  return verifyAccess(req.headers.authorization?.match(/^Bearer (.+)$/)?.[1]);
+}
+const publicIdFor = sub => createHmac("sha256", privatePem).update("public-id:" + sub).digest("base64url").slice(0, 22);
 app.get("/.well-known/jwks.json", (_req, res) => res.json({ keys: [jwk] }));
 app.post("/auth/refresh", async (req, res) => {
   if (!permittedOrigin(req)) return res.sendStatus(403);
@@ -88,7 +94,7 @@ app.get("/users/@me", async (req, res) => {
   const claims = await token(req);
   if (!claims) return res.sendStatus(401);
   res.set("Cache-Control", "no-store").json({ user: {}, player: {
-    publicId: createHmac("sha256", privatePem).update("public-id:" + claims.sub).digest("base64url").slice(0, 22), adfree: true, canCreatePublicLobbies: true,
+    publicId: publicIdFor(claims.sub), adfree: true, canCreatePublicLobbies: true,
     achievements: { singleplayerMap: [], player: [] }, friends: [], subscription: null,
   }});
 });
@@ -99,37 +105,40 @@ app.post("/custom_tribes", (_req, res) => res.json({ tribes: [] }));
 app.get("/cluster.json", (_req, res) => res.sendStatus(404));
 const gamesDir = process.env.STANDALONE_GAMES_DIR ?? "standalone-data/games";
 mkdirSync(gamesDir, { recursive: true, mode: 0o700 });
+const stats = createStatistics(gamesDir, publicIdFor);
 const validGameId = id => /^[A-Za-z0-9]{8,10}$/.test(id);
 app.post("/game/:id", async (req, res) => {
   const id = req.params.id, record = req.body;
   if (!validGameId(id) || !record || record.info?.gameID !== id ||
       !Array.isArray(record.info?.players) || !Array.isArray(record.turns) ||
       record.version !== "v0.0.2" || typeof record.gitCommit !== "string") return res.sendStatus(400);
-  // The upstream service scrubs account IDs and abuse reports before serving a replay.
   for (const player of record.info.players) {
     if (!player || typeof player !== "object" || Array.isArray(player)) return res.sendStatus(400);
-    player.persistentID = null;
   }
-  delete record.info.reports;
-  const target = join(gamesDir, `${id}.json`), temp = join(gamesDir, `.${id}.${randomUUID()}.tmp`);
-  try {
-    await writeFile(temp, JSON.stringify(record), { flag: "wx", mode: 0o600 });
-    await link(temp, target); // atomic, never overwrite a completed game
-    res.sendStatus(201);
-  } catch (error) {
-    if (error.code === "EEXIST") res.sendStatus(409);
-    else { console.error("Failed to store a game record", error.code); res.sendStatus(500); }
-  } finally { await unlink(temp).catch(() => {}); }
+  try { return res.sendStatus(stats.archive(id, record) ? 201 : 409); }
+  catch (error) { console.error("Failed to store a game record", error.code); return res.sendStatus(500); }
 });
 app.get("/game/:id", async (req, res) => {
   if (!validGameId(req.params.id)) return res.sendStatus(404);
   try {
-    const record = await readFile(join(gamesDir, `${req.params.id}.json`));
+    const record = stats.replay(req.params.id) ?? await readFile(join(gamesDir, `${req.params.id}.json`));
     res.type("application/json").set("Cache-Control", "public, max-age=300").send(record);
   } catch (error) {
     if (error.code === "ENOENT") res.sendStatus(404);
     else { console.error("Failed to read a game record", error.code); res.sendStatus(500); }
   }
 });
+app.get("/public/player/:id", (req, res) => {
+  const profile = stats.profile(req.params.id);
+  return profile ? res.json(profile) : res.sendStatus(404);
+});
+app.get("/player/:id", async (req, res) => {
+  if (!await token(req)) return res.sendStatus(401);
+  const profile = stats.profile(req.params.id);
+  return profile ? res.json(profile) : res.sendStatus(404);
+});
+app.get("/leaderboard/ranked", (_req, res) => res.json(stats.leaderboard()));
 app.get("/health", (_req, res) => res.json({ ok: true }));
-app.listen(Number(process.env.STANDALONE_API_PORT ?? 13802), "127.0.0.1", () => console.log("Standalone API listening on loopback"));
+const server = createServer(app);
+installMatchmaking({ app, server, verifyAccess, publicIdFor, isInternal, allowedOrigin: new URL(issuer).origin });
+server.listen(Number(process.env.STANDALONE_API_PORT ?? 13802), "127.0.0.1", () => console.log("Standalone API listening on loopback"));

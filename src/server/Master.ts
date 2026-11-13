@@ -110,7 +110,7 @@ app.use(
   }),
 );
 
-app.set("trust proxy", 3);
+app.set("trust proxy", "loopback");
 app.use(
   rateLimit({
     windowMs: 1000, // 1 second
