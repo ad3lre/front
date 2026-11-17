@@ -529,7 +529,7 @@ export class NavAccountMenu extends LitElement {
       <div
         role="menu"
         aria-label=${translateText("nav_account_menu.title")}
-        class="w-max min-w-60 max-w-[min(20rem,calc(100vw-1rem))] rounded-xl border border-white/10 bg-zinc-900 shadow-xl overflow-hidden"
+        class="front-menu-panel w-max min-w-60 max-w-[min(20rem,calc(100vw-1rem))] rounded-xl border border-white/10 shadow-xl overflow-hidden"
       >
         ${this.renderProvisionalNote()}
         ${this.items().map(
@@ -552,7 +552,7 @@ export class NavAccountMenu extends LitElement {
           `,
         )}
         <a href="https://github.com/ad3lre/front/tree/rxnd/standalone" target="_blank" rel="noopener noreferrer" class="front-source-link">Source code <span>↗</span></a>
-        <div class="front-source-credit">© OpenFront and Contributors</div>
+        <div class="front-source-credit">Based on OpenFront</div>
       </div>
     `;
   }
@@ -856,7 +856,7 @@ export class NavAccountMenu extends LitElement {
         aria-haspopup="menu"
         aria-expanded=${this.menuOpen ? "true" : "false"}
         @click=${this.handleTriggerClick}
-        class="nav-menu-item h-10 flex items-center justify-center gap-1 pl-1 pr-1.5 rounded-full text-white/90 cursor-pointer transition-colors"
+        class="nav-menu-item front-account-trigger h-10 flex items-center justify-center gap-1 pl-1 pr-1.5 text-white/90 cursor-pointer transition-colors"
         data-page="page-account"
         aria-label=${this.triggerLabel()}
         data-i18n-title="main.account"

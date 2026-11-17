@@ -7,18 +7,6 @@ vi.mock("../../src/client/Api", () => ({
   getUserMe: () => getUserMe(),
 }));
 
-const userAuth = vi.fn(async (): Promise<unknown> => false);
-vi.mock("../../src/client/Auth", () => ({
-  userAuth: () => userAuth(),
-}));
-
-vi.mock("../../src/client/CrazyGamesSDK", () => ({
-  crazyGamesSDK: {
-    isOnCrazyGames: vi.fn(() => false),
-    getUserProfile: vi.fn(async () => null),
-  },
-}));
-
 vi.mock("../../src/client/TerrainMapFileLoader", () => ({
   terrainMapFileLoader: { getMapData: vi.fn() },
 }));
@@ -47,7 +35,7 @@ function userMe(trustTier?: "trusted" | "untrusted" | null): UserMeResponse {
   } as unknown as UserMeResponse;
 }
 
-describe("RankedModal trust lock", () => {
+describe("RankedModal without account requirement", () => {
   let modal: RankedModal;
 
   beforeEach(() => {
@@ -60,9 +48,7 @@ describe("RankedModal trust lock", () => {
     modal.remove();
   });
 
-  async function openWith(
-    response: UserMeResponse | false,
-  ): Promise<HTMLElement[]> {
+  async function openWith(response: UserMeResponse | false): Promise<void> {
     getUserMe.mockReturnValue(Promise.resolve(response));
     modal.open();
     await vi.waitFor(() => expect(getUserMe).toHaveBeenCalled());
@@ -71,68 +57,16 @@ describe("RankedModal trust lock", () => {
       expect((modal as unknown as { loading: boolean }).loading).toBe(false);
     });
     await modal.updateComplete;
-    return [...modal.querySelectorAll<HTMLElement>("[data-trust]")];
   }
 
-  it("shows a green open lock on every ranked card for a trusted account", async () => {
-    const locks = await openWith(userMe("trusted"));
-    expect(locks).toHaveLength(3);
-    for (const lock of locks) {
-      expect(lock.dataset.trust).toBe("unlocked");
-      expect(lock.classList.contains("text-green-400")).toBe(true);
-    }
+  it("shows no trust locks on ranked cards", async () => {
+    await openWith(userMe("trusted"));
+    expect(modal.querySelectorAll("[data-trust]")).toHaveLength(0);
   });
 
   it("has no FFA card", async () => {
     await openWith(userMe("trusted"));
     expect(modal.textContent).not.toContain("mode_selector.ranked_ffa_title");
-  });
-
-  it.each(["untrusted", null, undefined] as const)(
-    "shows a red closed lock when the tier is %s",
-    async (tier) => {
-      const locks = await openWith(userMe(tier));
-      expect(locks).toHaveLength(3);
-      for (const lock of locks) {
-        expect(lock.dataset.trust).toBe("locked");
-        expect(lock.classList.contains("text-red-400")).toBe(true);
-      }
-    },
-  );
-
-  it("shows a red closed lock when signed out", async () => {
-    const locks = await openWith(false);
-    expect(locks.map((l) => l.dataset.trust)).toEqual([
-      "locked",
-      "locked",
-      "locked",
-    ]);
-  });
-
-  it("shows no lock until /users/@me answers", async () => {
-    let resolve!: (value: UserMeResponse) => void;
-    getUserMe.mockReturnValue(new Promise((r) => (resolve = r)));
-    modal.open();
-    await modal.updateComplete;
-    expect(modal.querySelectorAll("[data-trust]")).toHaveLength(0);
-    resolve(userMe("trusted"));
-    await vi.waitFor(async () => {
-      await modal.updateComplete;
-      expect(modal.querySelectorAll("[data-trust]")).toHaveLength(3);
-    });
-  });
-
-  it("shows no lock when /users/@me fails", async () => {
-    getUserMe.mockRejectedValue(new Error("network"));
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    modal.open();
-    await vi.waitFor(async () => {
-      await modal.updateComplete;
-      expect((modal as unknown as { loading: boolean }).loading).toBe(false);
-    });
-    await modal.updateComplete;
-    expect(modal.querySelectorAll("[data-trust]")).toHaveLength(0);
-    warn.mockRestore();
   });
 
   describe("clicking a ranked mode", () => {
@@ -144,7 +78,6 @@ describe("RankedModal trust lock", () => {
         "open-matchmaking",
         openMatchmaking as EventListener,
       );
-      userAuth.mockResolvedValue({ jwt: "token" });
     });
 
     afterEach(() => {
@@ -154,54 +87,40 @@ describe("RankedModal trust lock", () => {
       );
     });
 
-    const dialog = () =>
-      modal.querySelector("confirm-dialog") as
-        | (HTMLElement & { message: string })
-        | null;
-
     async function click(index: number): Promise<void> {
-      (modal.querySelectorAll("button:has([data-trust])")[index] as
-        | HTMLButtonElement
-        | undefined)!.click();
+      const buttons = [
+        ...modal.querySelectorAll<HTMLButtonElement>("button"),
+      ].filter((b) =>
+        /mode_selector\.ranked_(1v1|2v2)_title/.test(b.textContent ?? ""),
+      );
+      buttons[index]!.click();
       await modal.updateComplete;
     }
 
-    it.each([0, 1, 2])(
-      "shows the ranked trust popup for an untrusted account (card %i)",
-      async (index) => {
-        await openWith(userMe("untrusted"));
-        await click(index);
-        expect(dialog()?.message).toBe(
-          "mode_selector.ranked_trust_required_body",
-        );
-        expect(openMatchmaking).not.toHaveBeenCalled();
-      },
-    );
-
-    it("tells a signed-out viewer to sign in first", async () => {
-      await openWith(false);
+    it.each([
+      ["trusted", userMe("trusted")],
+      ["untrusted", userMe("untrusted")],
+      ["guest", userMe(null)],
+      ["signed out", false],
+    ] as const)("opens matchmaking for a %s viewer", async (_, response) => {
+      await openWith(response);
       await click(0);
-      expect(dialog()?.message).toBe(
-        "mode_selector.ranked_trust_required_body_signed_out",
+      await vi.waitFor(() =>
+        expect(openMatchmaking).toHaveBeenCalledWith(
+          expect.objectContaining({ detail: { mode: "1v1" } }),
+        ),
       );
+      expect(modal.querySelector("confirm-dialog")).toBeNull();
     });
 
-    it.each([
-      [0, "1v1"],
-      [1, "2v2"],
-      [2, "clanwars"],
-    ] as const)(
-      "opens matchmaking for a trusted account (card %i, %s)",
-      async (index, mode) => {
-        await openWith(userMe("trusted"));
-        await click(index);
-        await vi.waitFor(() =>
-          expect(openMatchmaking).toHaveBeenCalledWith(
-            expect.objectContaining({ detail: { mode } }),
-          ),
-        );
-        expect(dialog()).toBeNull();
-      },
-    );
+    it("opens 2v2 matchmaking from the second card", async () => {
+      await openWith(userMe("trusted"));
+      await click(1);
+      await vi.waitFor(() =>
+        expect(openMatchmaking).toHaveBeenCalledWith(
+          expect.objectContaining({ detail: { mode: "2v2" } }),
+        ),
+      );
+    });
   });
 });

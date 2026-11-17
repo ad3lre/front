@@ -65,6 +65,7 @@ import { rejoinOrClose } from "./Rejoin";
 import { ServerEnv } from "./ServerEnv";
 import { SingleplayerPresence } from "./SingleplayerPresence";
 import { applyStaticAssetCacheControl } from "./StaticAssetCache";
+import { registerSchoolPoll } from "./SchoolPoll";
 import { WorkerLobbyService } from "./WorkerLobbyService";
 import { initWorkerMetrics } from "./WorkerMetrics";
 import { stripWorkerPrefix } from "./WorkerPathPrefix";
@@ -343,6 +344,16 @@ export async function startWorker() {
 
   app.set("trust proxy", "loopback");
   app.use(compression());
+
+  // School proxies (Octogate/Squid) strip WebSocket Upgrade — HTTP long-poll
+  // carries the same zbin frames. Outbox policy never drops game turns or
+  // lobby count deltas (see SchoolPoll.ts).
+  registerSchoolPoll(app, {
+    gameWss: wss,
+    lobbiesWss: lobbyService.getLobbiesWss(),
+    clientIp: (req) => getClientIp(req as http.IncomingMessage),
+    log,
+  });
 
   app.use(
     express.static(path.join(__dirname, "../../out"), {
@@ -967,6 +978,7 @@ export async function startWorker() {
           clientMsg.platform,
           clientMsg.device,
           levelBadge,
+          claims?.bot === true,
         );
 
         const joinResult = gm.joinClient(client, clientMsg.gameID);

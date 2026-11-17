@@ -46,7 +46,8 @@ export type Intent =
   | KickPlayerIntent
   | TogglePauseIntent
   | UpdateGameConfigIntent
-  | ToggleGameStartTimer;
+  | ToggleGameStartTimer
+  | FastTrackStartIntent;
 
 export type AttackIntent = z.infer<typeof AttackIntentSchema>;
 export type CancelAttackIntent = z.infer<typeof CancelAttackIntentSchema>;
@@ -83,6 +84,7 @@ export type UpdateGameConfigIntent = z.infer<
 export type ToggleGameStartTimer = z.infer<
   typeof ToggleGameStartTimerIntentSchema
 >;
+export type FastTrackStartIntent = z.infer<typeof FastTrackStartIntentSchema>;
 
 export type Turn = z.infer<typeof TurnSchema>;
 export type GameConfig = z.infer<typeof GameConfigSchema>;
@@ -567,6 +569,11 @@ export const ToggleGameStartTimerIntentSchema = z.object({
   type: z.literal("toggle_game_start_timer"),
 });
 
+/** Any seated player in a public lobby: force startsAt to ~15s from now. */
+export const FastTrackStartIntentSchema = z.object({
+  type: z.literal("fast_track_start"),
+});
+
 export const IntentSchema = z.discriminatedUnion("type", [
   AttackIntentSchema,
   CancelAttackIntentSchema,
@@ -593,6 +600,7 @@ export const IntentSchema = z.discriminatedUnion("type", [
   TogglePauseIntentSchema,
   UpdateGameConfigIntentSchema,
   ToggleGameStartTimerIntentSchema,
+  FastTrackStartIntentSchema,
 ]);
 
 // StampedIntent = Intent with server-stamped clientID (used in turns and execution)
@@ -628,6 +636,9 @@ export const PlayerSchema = z.object({
   // game's team list). Feeds deterministic team assignment, so it must be
   // identical for every client (like clanTag/friends).
   teamIndex: zb.uint().optional(),
+  // Matchmaking bot seat: every client runs NationExecution for these so
+  // the sim stays lockstep without bot-authored intents.
+  isBot: z.boolean().optional(),
 });
 
 // A purchased bot tribe name in use this game (active names are globally

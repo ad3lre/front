@@ -46,11 +46,6 @@ async function broadcast(
   await selector.updateComplete;
 }
 
-// No lobbies are pushed, so the only lock on the page is the Ranked button's.
-function rankedLock(selector: Selector): HTMLElement | null {
-  return selector.querySelector("[data-trust]");
-}
-
 beforeEach(() => {
   window.BOOTSTRAP_CONFIG = {
     gameEnv: "dev",
@@ -70,40 +65,16 @@ afterEach(() => {
   ClientEnv.reset();
 });
 
-describe("Ranked button trust lock", () => {
-  it("shows no lock before /users/@me has answered", async () => {
+describe("Ranked button without account requirement", () => {
+  it.each([
+    ["before /users/@me", null],
+    ["trusted", me("trusted")],
+    ["untrusted", me("untrusted")],
+    ["signed out", false],
+  ] as const)("shows no trust lock for a %s viewer", async (_, response) => {
     const selector = await mount();
-    expect(rankedLock(selector)).toBeNull();
-  });
-
-  it("shows a green open lock for a trusted viewer", async () => {
-    const selector = await mount();
-    await broadcast(selector, me("trusted"));
-    const lock = rankedLock(selector);
-    expect(lock?.dataset.trust).toBe("unlocked");
-    expect(lock?.classList.contains("text-green-400")).toBe(true);
-    expect(lock?.closest("button")?.textContent).toContain(
-      "mode_selector.ranked_title",
-    );
-  });
-
-  // The red locks and the trust popup live inside the ranked modal.
-  it("shows no lock for an untrusted viewer", async () => {
-    const selector = await mount();
-    await broadcast(selector, me("untrusted"));
-    expect(rankedLock(selector)).toBeNull();
-  });
-
-  it("shows no lock when signed out", async () => {
-    const selector = await mount();
-    await broadcast(selector, false);
-    expect(rankedLock(selector)).toBeNull();
-  });
-
-  it("reads a broadcast that went out before it mounted", async () => {
-    lastBroadcast.current = { response: me("trusted") };
-    const selector = await mount();
-    expect(rankedLock(selector)?.dataset.trust).toBe("unlocked");
+    if (response !== null) await broadcast(selector, response);
+    expect(selector.querySelector("[data-trust]")).toBeNull();
   });
 });
 

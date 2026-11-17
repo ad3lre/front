@@ -54,10 +54,15 @@ function cookies(req) {
 function permittedOrigin(req) {
   return !req.headers.origin || req.headers.origin === new URL(issuer).origin;
 }
-function sign(sub, type, ttl) {
-  return new SignJWT({ typ: type, provider: "guest" }).setProtectedHeader({ alg: "EdDSA" })
+function sign(sub, type, ttl, extra = {}) {
+  return new SignJWT({ typ: type, provider: "guest", ...extra }).setProtectedHeader({ alg: "EdDSA" })
     .setIssuer(issuer).setAudience(audience).setSubject(sub).setJti(randomUUID())
     .setIssuedAt().setExpirationTime(ttl).sign(privateKey);
+}
+async function mintBotJwt() {
+  const sub = Buffer.from(randomUUID().replaceAll("-", ""), "hex").toString("base64url");
+  const jwt = await sign(sub, "access", "1h", { bot: true });
+  return { jwt, sub };
 }
 async function verifyAccess(value) {
   if (!value) return null;
@@ -93,8 +98,12 @@ app.post("/auth/logout", (req, res) => {
 app.get("/users/@me", async (req, res) => {
   const claims = await token(req);
   if (!claims) return res.sendStatus(401);
+  // Guests are first-class players here: no linked Discord/Google/Steam
+  // account is required to join public lobbies or ranked, including the
+  // periodically trusted-only public slots MapPlaylist schedules.
   res.set("Cache-Control", "no-store").json({ user: {}, player: {
     publicId: publicIdFor(claims.sub), adfree: true, canCreatePublicLobbies: true,
+    trustTier: "trusted",
     achievements: { singleplayerMap: [], player: [] }, friends: [], subscription: null,
   }});
 });
@@ -140,5 +149,18 @@ app.get("/player/:id", async (req, res) => {
 app.get("/leaderboard/ranked", (_req, res) => res.json(stats.leaderboard()));
 app.get("/health", (_req, res) => res.json({ ok: true }));
 const server = createServer(app);
-installMatchmaking({ app, server, verifyAccess, publicIdFor, isInternal, allowedOrigin: new URL(issuer).origin });
+installMatchmaking({
+  app,
+  server,
+  verifyAccess,
+  publicIdFor,
+  isInternal,
+  allowedOrigin: new URL(issuer).origin,
+  mintBotJwt,
+  gameWsBase: () =>
+    process.env.GAME_WS_BASE ??
+    `ws://127.0.0.1:${Number(process.env.GAME_WORKER_PORT ?? 13801)}`,
+  gitCommit: () => process.env.GIT_COMMIT ?? "",
+  enableBots: process.env.MATCHMAKING_BOTS !== "0",
+});
 server.listen(Number(process.env.STANDALONE_API_PORT ?? 13802), "127.0.0.1", () => console.log("Standalone API listening on loopback"));

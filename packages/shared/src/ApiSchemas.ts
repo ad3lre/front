@@ -52,6 +52,9 @@ export const TokenPayloadSchema = z.object({
     .or(z.string())
     .optional(),
   provider: z.string().optional(),
+  // Standalone matchmaking bots: JWT claim so the worker can stamp isBot on
+  // the seated client and game start info (Nation AI drives them in-sim).
+  bot: z.boolean().optional(),
 });
 export type TokenPayload = z.infer<typeof TokenPayloadSchema>;
 

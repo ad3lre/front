@@ -52,15 +52,25 @@ import { clientDevice, clientPlatform } from "./ClientPlatform";
 import { isDesktopShell } from "./DesktopShell";
 import { showInGameConfirm } from "./InGameModal";
 import {
+  SendFastTrackStartEvent,
   SendKickPlayerIntentEvent,
   SendSpectateEvent,
   SendToggleGameStartTimer,
   SendUpdateGameConfigIntentEvent,
 } from "./LobbyEvents";
 import { LocalServer } from "./LocalServer";
+import { SchoolPollSocket } from "./SchoolPollSocket";
+import {
+  latchPollTransport,
+  readSchoolTransportMode,
+  shouldStartWithPoll,
+  WS_OPEN_TIMEOUT_MS,
+} from "./SchoolTransport";
 import { describeSocketClose } from "./SocketClose";
 import { homeHref, translateText } from "./Utils";
 import { PlayerView } from "./view";
+
+type GameSocket = WebSocket | SchoolPollSocket;
 
 export class PauseGameIntentEvent implements GameEvent {
   constructor(public readonly paused: boolean) {}
@@ -261,7 +271,7 @@ export class Transport {
   static readonly RECONNECT_BASE_DELAY_MS = 1000;
   static readonly RECONNECT_MAX_DELAY_MS = 15_000;
 
-  private socket: WebSocket | null = null;
+  private socket: GameSocket | null = null;
 
   private localServer: LocalServer;
 
@@ -377,6 +387,7 @@ export class Transport {
     this.subscribe(SendToggleGameStartTimer, (e) =>
       this.onSendToggleGameStartTimer(e),
     );
+    this.subscribe(SendFastTrackStartEvent, () => this.onSendFastTrackStart());
     this.subscribe(SendSpectateEvent, (e) => {
       this.lobbyConfig.spectator = e.spectator;
       this.sendMsg({
@@ -477,18 +488,53 @@ export class Transport {
       this.handleConnectionRefused(CloseReason.Unknown);
       return;
     }
-    const socket = new WebSocket(
-      `${ClientEnv.gameWsBase(this.lobbyConfig.gameID)}/${workerPath}`,
-    );
+    const pollBase = `${ClientEnv.gameHttpBase(this.lobbyConfig.gameID)}/${workerPath}`;
+    const usePoll =
+      readSchoolTransportMode() !== "ws" && shouldStartWithPoll();
+    const socket: GameSocket = usePoll
+      ? new SchoolPollSocket(pollBase, "game")
+      : new WebSocket(
+          `${ClientEnv.gameWsBase(this.lobbyConfig.gameID)}/${workerPath}`,
+        );
     this.socket = socket;
     let openedAt: number | null = null;
+    let pollFallbackArmed =
+      !usePoll && readSchoolTransportMode() !== "ws";
+    let opened = false;
     // Every frame is a zbin payload; without this they would arrive as Blobs.
     this.socket.binaryType = "arraybuffer";
     this.onconnect = onconnect;
     this.onmessage = onmessage;
+
+    const fallbackToPoll = (why: string) => {
+      if (!pollFallbackArmed || this.socket !== socket) return;
+      pollFallbackArmed = false;
+      console.warn(`Game WebSocket blocked — school-safe poll (${why})`);
+      latchPollTransport();
+      this.killExistingSocket();
+      this.connectRemote(onconnect, onmessage);
+    };
+
+    if (pollFallbackArmed) {
+      window.setTimeout(() => {
+        if (
+          this.socket === socket &&
+          !opened &&
+          socket.readyState !== WebSocket.OPEN
+        ) {
+          fallbackToPoll("open-timeout");
+        }
+      }, WS_OPEN_TIMEOUT_MS);
+    }
+
     this.socket.onopen = () => {
+      opened = true;
       openedAt = Date.now();
-      console.log("Connected to game server!");
+      if (usePoll) {
+        console.log("Connected to game server (school-safe poll)!");
+      } else {
+        console.log("Connected to game server!");
+      }
       if (this.socket === null) {
         console.error("socket is null");
         return;
@@ -552,13 +598,25 @@ export class Transport {
       }
     };
     this.socket.onerror = () => {
-      if (this.socket === null) {
+      if (this.socket === null || this.socket !== socket) {
+        return;
+      }
+      if (pollFallbackArmed && !opened) {
+        fallbackToPoll("error");
         return;
       }
       this.socket.close();
     };
     this.socket.onclose = (event: CloseEvent) => {
+      if (this.socket !== socket && this.socket !== null) {
+        // Superseded by poll fallback or reconnect.
+        return;
+      }
       this.isSessionReady = false;
+      if (pollFallbackArmed && !opened && !usePoll) {
+        fallbackToPoll("close-before-open");
+        return;
+      }
       const detail = describeSocketClose(socket.url, event, openedAt);
       if (event.code === CloseCode.Normal) {
         console.log(`Game socket ${detail}`);
@@ -1018,6 +1076,10 @@ export class Transport {
 
   private onSendToggleGameStartTimer(event: SendToggleGameStartTimer) {
     this.sendIntent({ type: "toggle_game_start_timer" });
+  }
+
+  private onSendFastTrackStart() {
+    this.sendIntent({ type: "fast_track_start" });
   }
 
   // The intent schemas take troops as a finite float >= 0, and the server

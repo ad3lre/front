@@ -2,7 +2,11 @@ import { html, LitElement, nothing, render, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { desktopQuit, requestDesktopQuit } from "../DesktopShell";
 import { closeMobileSidebar } from "../Navigation";
-import { getCurrentLanguage, translateText } from "../Utils";
+import {
+  getCurrentLanguage,
+  openLanguagePicker,
+  translateText,
+} from "../Utils";
 import { NavNotificationsController } from "./NavNotificationsController";
 import { usernameText } from "./ui/UsernameText";
 
@@ -15,7 +19,7 @@ const REQUEST_DATE_FORMAT: Intl.DateTimeFormatOptions = {
 };
 
 /**
- * The news bell, help "?", settings cogwheel and (on the desktop shell) a
+ * The news bell, help "?", language, settings cogwheel and (on the desktop shell) a
  * power button as icon buttons, with the notification dots the first two carry.
  *
  * Shared by the desktop nav bar and the mobile top bar so both read as the same
@@ -217,6 +221,12 @@ export class NavUtilityIcons extends LitElement {
     `;
   }
 
+  private openLanguage = (): void => {
+    this.closeNotifications();
+    closeMobileSidebar();
+    openLanguagePicker();
+  };
+
   private openFriendRequests = (): void => {
     this.closeNotifications();
     closeMobileSidebar();
@@ -244,7 +254,7 @@ export class NavUtilityIcons extends LitElement {
       <div
         role="menu"
         aria-label=${translateText("notifications.title")}
-        class="w-[min(22rem,calc(100vw-1rem))] rounded-xl border border-white/10 bg-zinc-900 shadow-xl overflow-hidden"
+        class="front-menu-panel w-[min(22rem,calc(100vw-1rem))] rounded-xl border border-white/10 shadow-xl overflow-hidden"
       >
         <div
           class="px-4 py-3 border-b border-white/10 text-sm font-bold text-white"
@@ -431,6 +441,31 @@ export class NavUtilityIcons extends LitElement {
               : ""
           }
         </div>
+        <button
+          type="button"
+          class="${this.buttonClass()}"
+          data-i18n-aria-label="main.language"
+          data-i18n-title="main.language"
+          @click=${this.openLanguage}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="w-6 h-6 pointer-events-none"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path d="M3 12h18" />
+            <path
+              d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"
+            />
+          </svg>
+        </button>
         <button
           class="${this.buttonClass()} ${
             currentPage === "page-settings" ? "active" : ""

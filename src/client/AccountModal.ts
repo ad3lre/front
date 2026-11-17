@@ -17,18 +17,15 @@ import {
   discordLogin,
   googleLogin,
   linkGoogle,
-  linkSteam,
   logOut,
   reauthAfterPortalChange,
   sendMagicLink,
-  steamLogin,
 } from "./Auth";
 import "./components/baseComponents/stats/DiscordUserHeader";
 import "./components/baseComponents/stats/PlayerGameHistoryView";
 import type { PlayerGameHistoryCache } from "./components/baseComponents/stats/PlayerGameHistoryView";
 import "./components/baseComponents/stats/PlayerStatsTable";
 import "./components/baseComponents/stats/PlayerStatsTree";
-import "./components/baseComponents/stats/SteamUserHeader";
 import { BaseModal } from "./components/BaseModal";
 import "./components/CopyButton";
 import "./components/CreatorCodePanel";
@@ -44,7 +41,6 @@ import "./components/RewardsPanel";
 import type { RewardsChangedDetail } from "./components/RewardsPanel";
 import { googleLinkButton } from "./components/ui/GoogleLinkButton";
 import { modalHeader } from "./components/ui/ModalHeader";
-import { steamGlyph, steamLinkButton } from "./components/ui/SteamLinkButton";
 import { desktopLinkGate, isSteamShell } from "./DesktopShell";
 import { gamePortal, type PortalUser } from "./GamePortal";
 import "./GameStatsModal";
@@ -356,13 +352,6 @@ export class AccountModal extends BaseModal {
               <discord-user-header
                 .data=${this.userMeResponse?.user?.discord ?? null}
               ></discord-user-header>
-              ${
-                this.userMeResponse?.user?.steam
-                  ? html`<steam-user-header
-                      .data=${this.userMeResponse.user.steam}
-                    ></steam-user-header>`
-                  : null
-              }
               ${this.renderLoggedInAs()}
             </div>
           </div>
@@ -880,51 +869,9 @@ export class AccountModal extends BaseModal {
   // Not shown inside the desktop shell: a shell player already holds this
   // identity through the native Steam ticket.
   private renderSteamLink(): TemplateResult {
-    if (isSteamShell()) return html``;
-    const steam = this.userMeResponse?.user?.steam;
-    if (steam) {
-      // The attached account is NAMED, not merely reported as linked: a wrong
-      // link — the player's browser was signed into someone else's Steam when
-      // they clicked — cannot be undone by them, so noticing it immediately is
-      // the difference between a quick support fix and a permanent one.
-      // Steam's own consent page is the first defence; this is the second.
-      //
-      // The persona and avatar come from the <steam-user-header> that
-      // renderAccountTab already renders whenever user.steam is set, for every
-      // branch including Steam-primary. Rendering a second one here showed it
-      // TWICE to exactly the players this row is for — anyone Discord-,
-      // Google- or email-primary with Steam linked.
-      return html`
-        <div class="flex flex-col items-center gap-1">
-          <div class="flex items-center gap-2 text-white/70 text-sm">
-            ${steamGlyph("w-4 h-4 shrink-0")}
-            <span>${translateText("account_modal.linked_to_steam")}</span>
-          </div>
-          <span class="text-white/40 text-xs text-center">
-            ${translateText("account_modal.link_steam_permanent")}
-          </span>
-        </div>
-      `;
-    }
-    return html`
-      <div class="w-full flex flex-col gap-1">
-        ${steamLinkButton(this.handleLinkSteam)}
-        <span class="text-white/40 text-xs text-center">
-          ${translateText("account_modal.link_steam_permanent")}
-        </span>
-      </div>
-    `;
+    // RXND standalone: no Steam link / buy flows in account UI.
+    return html``;
   }
-
-  private handleLinkSteam = async (): Promise<void> => {
-    // On success linkSteam navigates to Steam; the result comes back as a
-    // `link=...` router arg handled by consumeLinkResult. A false return means
-    // we couldn't start it.
-    const started = await linkSteam();
-    if (!started) {
-      await showInGameAlert(translateText("account_modal.link_steam_failed"));
-    }
-  };
 
   private async viewGame(gameId: string): Promise<void> {
     this.close();
@@ -1100,24 +1047,6 @@ export class AccountModal extends BaseModal {
               >
             </button>
 
-            <!-- Sign in through Steam. Hidden inside the desktop shell: the
-                 player is already signed in there through the native Steam
-                 ticket, so the button would be a no-op that looks like an
-                 option. -->
-            ${
-              viaBrowser
-                ? nothing
-                : html`<button
-                    @click="${this.handleSteamLogin}"
-                    class="w-full px-6 py-4 text-white bg-[#1b2838] hover:bg-[#2a475e] border border-[#66c0f4]/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#66c0f4] transition-colors duration-200 flex items-center justify-center gap-3 shadow-lg"
-                  >
-                    ${steamGlyph("w-6 h-6 shrink-0")}
-                    <span class="font-bold tracking-wide"
-                      >${translateText("main.login_steam")}</span
-                    >
-                  </button>`
-            }
-
             <!-- Divider -->
             <div class="flex items-center gap-4 py-2">
               <div class="h-px bg-white/10 flex-1"></div>
@@ -1197,10 +1126,6 @@ export class AccountModal extends BaseModal {
 
   private handleGoogleLogin() {
     googleLogin();
-  }
-
-  private handleSteamLogin() {
-    steamLogin();
   }
 
   private handleLinkGoogle = async (): Promise<void> => {

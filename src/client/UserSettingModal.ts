@@ -3,6 +3,8 @@ import { html, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import {
   formatKeyForDisplay,
+  getCurrentLanguage,
+  openLanguagePicker,
   resolveKeybindLabel,
   translateText,
 } from "../client/Utils";
@@ -42,7 +44,6 @@ import { KEYBOARD_DETECTED_EVENT, Platform } from "./Platform";
 import type { AudioControls } from "./sound/CuePlayer";
 import { audioControls, playCue } from "./sound/CuePlayer";
 import type { CueCategory } from "./sound/Sounds";
-import { canHandOffToSteam } from "./SteamHandoff";
 import type { UIState } from "./UIState";
 import {
   AudioCategory,
@@ -461,6 +462,13 @@ export class UserSettingModal extends BaseModal {
     );
   }
 
+  private toggleSchoolSafeConnection(e: Event) {
+    const checked = (e.target as HTMLInputElement & { checked?: boolean })
+      .checked;
+    this.userSettings.setSchoolSafeConnection(Boolean(checked));
+    this.requestUpdate();
+  }
+
   private toggleAnonymousNames() {
     this.userSettings.toggleRandomName();
 
@@ -509,12 +517,6 @@ export class UserSettingModal extends BaseModal {
 
   private toggleReplayViewer(e: Event) {
     this.userSettings.setReplayViewer((e.target as HTMLInputElement).checked);
-  }
-
-  private toggleSteamLobbyLinks() {
-    this.userSettings.setSteamLobbyLinks(
-      this.userSettings.steamLobbyLinks() === "steam" ? "browser" : "steam",
-    );
   }
 
   private toggleLeftClickOpensMenu() {
@@ -1997,6 +1999,26 @@ export class UserSettingModal extends BaseModal {
 
   private renderGameplaySettings() {
     return html`
+      <button
+        type="button"
+        id="language-setting"
+        class="flex flex-row items-center justify-between w-full p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all gap-4 text-left"
+        @click=${() => openLanguagePicker()}
+      >
+        <div class="flex flex-col gap-1 min-w-0">
+          <span class="text-sm font-bold text-white"
+            >${translateText("user_setting.language_label")}</span
+          >
+          <span class="text-xs text-white/50"
+            >${translateText("user_setting.language_desc")}</span
+          >
+        </div>
+        <span
+          class="shrink-0 px-3 py-1.5 rounded-lg border border-white/15 bg-white/5 text-xs font-bold uppercase tracking-wider text-white/80"
+          >${getCurrentLanguage()}</span
+        >
+      </button>
+
       <!-- 🚨 Alert frame -->
       <setting-toggle
         label="${translateText("user_setting.alert_frame_label")}"
@@ -2067,6 +2089,15 @@ export class UserSettingModal extends BaseModal {
         @change=${this.toggleAnonymousNames}
       ></setting-toggle>
 
+      <!-- 🏫 School-safe HTTP poll (Octogate / Squid) -->
+      <setting-toggle
+        label="${translateText("user_setting.school_safe_label")}"
+        description="${translateText("user_setting.school_safe_desc")}"
+        id="school-safe-toggle"
+        .checked=${this.userSettings.schoolSafeConnection()}
+        @change=${this.toggleSchoolSafeConnection}
+      ></setting-toggle>
+
       <!-- 👁️ Hidden Lobby IDs -->
       <setting-toggle
         label="${translateText("user_setting.lobby_id_visibility_label")}"
@@ -2093,20 +2124,6 @@ export class UserSettingModal extends BaseModal {
         .checked=${this.userSettings.replayViewer()}
         @change=${this.toggleReplayViewer}
       ></setting-toggle>
-
-      ${
-        canHandOffToSteam()
-          ? html`<setting-toggle
-              label="${translateText("user_setting.steam_lobby_links_label")}"
-              description="${translateText(
-                "user_setting.steam_lobby_links_desc",
-              )}"
-              id="steam-lobby-links-toggle"
-              .checked=${this.userSettings.steamLobbyLinks() === "steam"}
-              @change=${this.toggleSteamLobbyLinks}
-            ></setting-toggle>`
-          : null
-      }
 
       <!-- 🔍 Go to player -->
       <setting-toggle

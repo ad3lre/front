@@ -5,7 +5,6 @@ import "./CosmeticBackground";
 import "./NavAccountMenu";
 import "./NavUtilityIcons";
 import "./NewsBox";
-import "./SteamWishlist";
 import "./StreamingNow";
 
 @customElement("play-page")
@@ -25,7 +24,7 @@ export class PlayPage extends LitElement {
 
         <!-- Mobile: Fixed top bar -->
         <div
-          class="lg:hidden fixed left-0 right-0 top-[var(--top-ad-height,0px)] z-40 pt-[env(safe-area-inset-top)] bg-surface border-b border-white/10"
+          class="front-mobile-top lg:hidden fixed left-0 right-0 top-[var(--top-ad-height,0px)] z-40 pt-[env(safe-area-inset-top)] border-b border-white/10"
         >
           <div
             class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center h-14 px-2 gap-2"
@@ -88,12 +87,6 @@ export class PlayPage extends LitElement {
           </aside>
           <game-mode-selector></game-mode-selector>
         </div>
-
-        <!-- Desktop gets the compact footer button instead. -->
-        <steam-wishlist
-          campaign="home_mobile"
-          class="block px-2 pb-4 lg:hidden"
-        ></steam-wishlist>
       </div>
     `;
   }

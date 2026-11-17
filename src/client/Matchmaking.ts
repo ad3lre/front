@@ -8,7 +8,6 @@ import { isCommitLike } from "@openfront/shared/ServerList";
 import { html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { ClientEnv } from "src/client/ClientEnv";
-import { responseHasLinkedIdentity } from "./AccountIdentity";
 import { getUserMe, invalidateUserMe } from "./Api";
 import { getPlayToken } from "./Auth";
 import { BaseModal } from "./components/BaseModal";
@@ -501,41 +500,21 @@ export class MatchmakingModal extends BaseModal {
       return;
     }
 
-    // Portal players authenticate through the SDK rather than a linked
-    // account, so a signed-in portal user counts as logged in for ranked.
-    const portalSignedIn =
-      gamePortal.isOnGamePortal() &&
-      (await gamePortal.getUserProfile()) !== null;
-    if (!this.isModalOpen) {
-      return;
-    }
-
-    // The `userMe === false` term is not redundant with the predicate below,
-    // which also returns false for `false`: it is what stops a signed-in
-    // portal player with no /users/@me from falling through to the
-    // leaderboard read, which would dereference `false`. It also narrows the
-    // type for that read.
+    // No linked-account gate: guest sessions and a missing /users/@me both
+    // still queue. connect() refreshes the play token itself. Elo/clan only
+    // apply when a profile is present.
+    const noElo = translateText("matchmaking_modal.no_elo");
     if (userMe === false) {
-      window.dispatchEvent(
-        new CustomEvent("show-message", {
-          detail: {
-            message: translateText("matchmaking_modal.must_login"),
-            color: "red",
-            duration: 3000,
-          },
-        }),
-      );
-      this.close();
-      window.showPage?.("page-account");
-      return;
+      this.elo = noElo;
+      this.selectedClanTag = null;
+    } else {
+      const row =
+        this.mode === "2v2"
+          ? userMe.player.leaderboard?.twoVtwo
+          : userMe.player.leaderboard?.oneVone;
+      this.elo = row?.elo ?? noElo;
+      this.selectedClanTag = this.selectedClanFrom(userMe);
     }
-
-    const row =
-      this.mode === "2v2"
-        ? userMe.player.leaderboard?.twoVtwo
-        : userMe.player.leaderboard?.oneVone;
-    this.elo = row?.elo ?? translateText("matchmaking_modal.no_elo");
-    this.selectedClanTag = this.selectedClanFrom(userMe);
     // Clan wars is played for a clan: without one of the player's own clans
     // selected the service would only refuse the join.
     if (this.mode === "clanwars" && this.selectedClanTag === null) {

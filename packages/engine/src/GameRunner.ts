@@ -7,6 +7,7 @@ import {
   HumanDisconnects,
   HumanStatsSnapshot,
   NameViewData,
+  Nation,
   PlayerActions,
   PlayerBorderTiles,
   PlayerBuildableUnitType,
@@ -55,26 +56,53 @@ export async function createGameRunner(
   const gameMap = await loadGameMap(gameStart.config, map);
   const random = new PseudoRandom(simpleHash(gameStart.gameID));
 
-  const humans = gameStart.players.map((p) => {
-    return new PlayerInfo(
-      p.username,
-      PlayerType.Human,
-      p.clientID,
-      random.nextID(),
-      p.isLobbyCreator ?? false,
-      p.clanTag,
-      p.friends ?? [],
-      p.teamIndex ?? null,
+  const humans: PlayerInfo[] = [];
+  const botNations: Nation[] = [];
+  for (const p of gameStart.players) {
+    if (p.isBot === true) {
+      // Matchmaking bot seats: Nation AI (NationExecution) drives them on
+      // every client. Keep clientID / teamIndex so 2v2 pins and roster stay.
+      botNations.push(
+        new Nation(
+          undefined,
+          new PlayerInfo(
+            p.username,
+            PlayerType.Nation,
+            p.clientID,
+            random.nextID(),
+            p.isLobbyCreator ?? false,
+            p.clanTag,
+            p.friends ?? [],
+            p.teamIndex ?? null,
+          ),
+        ),
+      );
+      continue;
+    }
+    humans.push(
+      new PlayerInfo(
+        p.username,
+        PlayerType.Human,
+        p.clientID,
+        random.nextID(),
+        p.isLobbyCreator ?? false,
+        p.clanTag,
+        p.friends ?? [],
+        p.teamIndex ?? null,
+      ),
     );
-  });
+  }
 
-  const nations = createNationsForGame(
-    gameStart,
-    gameMap.nations,
-    gameMap.additionalNations,
-    humans.length,
-    random,
-  );
+  const nations = [
+    ...createNationsForGame(
+      gameStart,
+      gameMap.nations,
+      gameMap.additionalNations,
+      humans.length,
+      random,
+    ),
+    ...botNations,
+  ];
 
   const game: Game = createGame(
     humans,
@@ -184,8 +212,11 @@ export class GameRunner {
     if (this.game.config().gameConfig().gameType !== GameType.Singleplayer) {
       this.game.addExecution(new SpawnTimerExecution());
     }
-    if (this.game.config().spawnNations()) {
-      this.game.addExecution(...this.execManager.nationExecutions());
+    // Drive every nation present: map nations when enabled, and matchmaking
+    // bot seats (isBot) even when config.nations is "disabled" for ranked.
+    const nationExecs = this.execManager.nationExecutions();
+    if (nationExecs.length > 0) {
+      this.game.addExecution(...nationExecs);
     }
     if (this.game.config().isRandomSpawn()) {
       this.game.addExecution(...this.execManager.spawnPlayers());

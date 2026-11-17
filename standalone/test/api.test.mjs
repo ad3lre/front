@@ -18,6 +18,8 @@ before(async () => {
     ...process.env, STANDALONE_API_PORT: String(port), STANDALONE_API_ORIGIN: issuer,
     STANDALONE_KEY_PATH: join(dir, "key.pem"), STANDALONE_GAMES_DIR: join(dir, "games"),
     API_KEY: "test-internal-key", DOMAIN: "localhost", COOKIE_SECURE: "false",
+    // Exact human-only queue assertions below; filler bots are covered separately.
+    MATCHMAKING_BOTS: "0",
   }, stdio: "ignore" });
   for (let i = 0; i < 100; i++) {
     if (server.exitCode !== null) throw new Error(`API exited ${server.exitCode}`);
@@ -44,7 +46,9 @@ test("guest sessions refresh consistently and authenticate profile", async () =>
   assert.equal(verified.payload.typ, "access");
   const profile = await fetch(`${origin}/users/@me`, { headers: { authorization: `Bearer ${second.jwt}` } });
   assert.equal(profile.status, 200);
-  const publicId = (await profile.json()).player.publicId;
+  const body = await profile.json();
+  const publicId = body.player.publicId;
+  assert.equal(body.player.trustTier, "trusted");
   assert.notEqual(publicId, verified.payload.sub);
   assert.match(publicId, /^[A-Za-z0-9_-]{22}$/);
   const again = await fetch(`${origin}/users/@me`, { headers: { authorization: `Bearer ${first.jwt}` } });

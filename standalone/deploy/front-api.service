@@ -9,7 +9,8 @@ User=founder
 Group=founder
 WorkingDirectory=/home/founder/prod/front
 EnvironmentFile=/home/founder/.config/front/runtime.env
-ExecStart=/home/founder/.nvm/versions/node/v24.16.0/bin/node /home/founder/prod/front/standalone/api.mjs
+# tsx so bot game joins can import @openfront/shared zbin codecs (TypeScript).
+ExecStart=/home/founder/.nvm/versions/node/v24.16.0/bin/node /home/founder/prod/front/node_modules/tsx/dist/cli.mjs /home/founder/prod/front/standalone/api.mjs
 Restart=on-failure
 RestartSec=3
 NoNewPrivileges=true

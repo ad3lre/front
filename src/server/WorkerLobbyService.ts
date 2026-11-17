@@ -82,6 +82,11 @@ export class WorkerLobbyService {
     return this.deploymentActive;
   }
 
+  /** Lobby-list WebSocket server — also used by school HTTP poll fallback. */
+  getLobbiesWss(): WebSocketServer {
+    return this.lobbiesWss;
+  }
+
   /** Browsers currently connected to this worker's /lobbies socket. */
   connectedClients(): number {
     return this.lobbyClients.size;

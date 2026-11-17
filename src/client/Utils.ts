@@ -513,6 +513,11 @@ export const getCurrentLanguage = (): string => {
   return lang === "debug" ? "en" : lang;
 };
 
+/** Opens the language modal via the single hidden <lang-selector>. */
+export const openLanguagePicker = (): void => {
+  void getCachedLangSelector()?.openLanguagePicker();
+};
+
 /** Language codes whose script reads right-to-left (resources/lang/metadata.json). */
 const RTL_LANGUAGES = new Set(["ar", "fa", "he"]);
 

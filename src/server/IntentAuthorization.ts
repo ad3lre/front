@@ -125,6 +125,17 @@ export function authorizeIntent(
       }
       return null;
 
+    case "fast_track_start":
+      // Public waiting lobbies only: any seated player can pull the start
+      // forward to ~15s so a thin roster is not stuck behind the queue.
+      if (!game.isPublic) {
+        return { status: 403, error: "fast track is only for public lobbies" };
+      }
+      if (game.hasStarted) {
+        return { status: 409, error: "game already started" };
+      }
+      return null;
+
     case "toggle_pause":
       if (!actor.isLobbyCreator && !actor.isAdminBot) {
         return { status: 403, error: "only the lobby creator can pause" };

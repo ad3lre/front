@@ -9,9 +9,18 @@ import {
   refreshServerList,
   reloadWouldRescue,
 } from "./ServerList";
+import { SchoolPollSocket } from "./SchoolPollSocket";
+import {
+  latchPollTransport,
+  readSchoolTransportMode,
+  shouldStartWithPoll,
+  WS_OPEN_TIMEOUT_MS,
+} from "./SchoolTransport";
 import { describeSocketClose } from "./SocketClose";
 import { translateText } from "./Utils";
 import { isReplayShellHost } from "./VersionedReplay";
+
+type LobbySocketHandle = WebSocket | SchoolPollSocket;
 
 interface LobbySocketOptions {
   reconnectDelay?: number;
@@ -36,7 +45,7 @@ function getRandomWorkerPath(numWorkers: number): string {
 }
 
 export class PublicLobbySocket {
-  private ws: WebSocket | null = null;
+  private ws: LobbySocketHandle | null = null;
   private wsReconnectTimeout: number | null = null;
   private wsConnectionAttempts = 0;
   private wsAttemptCounted = false;
@@ -170,33 +179,75 @@ export class PublicLobbySocket {
       // the desktop app://openfront origin), not window.location.host.
       // ?platform= is only for the server's per-platform lobby gauge: the
       // lobby socket has no join message to carry it in.
+      const pollBase = `${ClientEnv.serverHttpBase()}${this.workerPath}`;
+      const usePoll =
+        readSchoolTransportMode() !== "ws" && shouldStartWithPoll();
       const wsUrl = `${ClientEnv.serverWsBase()}${this.workerPath}/lobbies?platform=${clientPlatform()}`;
 
-      const ws = new WebSocket(wsUrl);
+      const ws: LobbySocketHandle = usePoll
+        ? new SchoolPollSocket(pollBase, "lobbies")
+        : new WebSocket(wsUrl);
       this.ws = ws;
       // Frames are zbin payloads; without this they would arrive as Blobs.
       ws.binaryType = "arraybuffer";
       this.wsAttemptCounted = false;
 
-      // A replaced socket's close arrives after its successor is dialing, and
-      // would count an attempt against it and schedule a reconnect over it.
-      const current = (handler: () => void) => () => {
-        if (this.ws === ws) handler();
-      };
       let openedAt: number | null = null;
-      ws.addEventListener(
-        "open",
-        current(() => {
-          openedAt = Date.now();
-          this.handleOpen();
-        }),
-      );
-      ws.addEventListener("message", (event) => {
+      let opened = false;
+      let pollFallbackArmed =
+        !usePoll && readSchoolTransportMode() !== "ws";
+
+      const fallbackToPoll = (why: string) => {
+        if (!pollFallbackArmed || this.ws !== ws) return;
+        pollFallbackArmed = false;
+        console.warn(`Lobby WebSocket blocked — school-safe poll (${why})`);
+        latchPollTransport();
+        try {
+          ws.onopen = null;
+          ws.onmessage = null;
+          ws.onclose = null;
+          ws.onerror = null;
+          ws.close();
+        } catch {
+          /* ignore */
+        }
+        this.ws = null;
+        this.connectWebSocket();
+      };
+
+      if (pollFallbackArmed) {
+        window.setTimeout(() => {
+          if (
+            this.ws === ws &&
+            !opened &&
+            ws.readyState !== WebSocket.OPEN
+          ) {
+            fallbackToPoll("open-timeout");
+          }
+        }, WS_OPEN_TIMEOUT_MS);
+      }
+
+      ws.onopen = () => {
+        if (this.ws !== ws) return;
+        opened = true;
+        openedAt = Date.now();
+        this.handleOpen();
+      };
+      ws.onmessage = (event) => {
         if (this.ws === ws) this.handleMessage(event);
-      });
-      ws.addEventListener("close", (event) => {
+      };
+      ws.onerror = () => {
+        if (this.ws !== ws) return;
+        if (pollFallbackArmed && !opened) fallbackToPoll("error");
+      };
+      ws.onclose = (event) => {
+        if (this.ws !== ws && this.ws !== null) return;
+        if (pollFallbackArmed && !opened && !usePoll) {
+          fallbackToPoll("close-before-open");
+          return;
+        }
         if (this.ws === ws) this.handleClose(ws.url, event, openedAt);
-      });
+      };
     } catch (error) {
       this.handleConnectError(error);
     }

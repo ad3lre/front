@@ -418,11 +418,9 @@ describe("MatchmakingModal clan-aware joins", () => {
   });
 });
 
-// The ranked lockout (OPE-260). A Steam-only account is a real, authenticated
-// session, but the retired `hasLinkedAccount` predicate had no steam term, so
-// this gate rejected it: must_login toast, modal closed, redirect to the
-// account page — with no way through. Steam-only is the default state for
-// anyone who buys on Steam and never links another provider.
+// Ranked no longer requires a linked Discord/Google/Steam/email identity.
+// Guest sessions (empty user object) and a missing /users/@me both queue;
+// connect() refreshes the play token itself.
 describe("MatchmakingModal identity gate", () => {
   let showPage: Mock<(page: string) => void>;
   let showMessage: Mock<(event: Event) => void>;
@@ -474,25 +472,22 @@ describe("MatchmakingModal identity gate", () => {
     expect(showPage).not.toHaveBeenCalled();
   });
 
-  it("still rejects a genuinely absent session", async () => {
-    const modal = await openWith(false);
-
-    await vi.waitFor(() =>
-      expect(showPage).toHaveBeenCalledWith("page-account"),
-    );
-    expect(sockets).toHaveLength(0);
-    expect(modal.isOpen()).toBe(false);
-    expect(showMessage).toHaveBeenCalledOnce();
-  });
-
-  it("still rejects a session with no linked identity at all", async () => {
+  it("admits a guest session with no linked identity", async () => {
     const modal = await openWith(userMe([], {} as UserMeResponse["user"]));
 
-    await vi.waitFor(() =>
-      expect(showPage).toHaveBeenCalledWith("page-account"),
-    );
-    expect(sockets).toHaveLength(0);
-    expect(modal.isOpen()).toBe(false);
+    await vi.waitFor(() => expect(sockets).toHaveLength(1));
+    expect(modal.isOpen()).toBe(true);
+    expect(showPage).not.toHaveBeenCalled();
+    expect(showMessage).not.toHaveBeenCalled();
+  });
+
+  it("still queues when /users/@me is absent", async () => {
+    const modal = await openWith(false);
+
+    await vi.waitFor(() => expect(sockets).toHaveLength(1));
+    expect(modal.isOpen()).toBe(true);
+    expect(showPage).not.toHaveBeenCalled();
+    expect(showMessage).not.toHaveBeenCalled();
   });
 });
 

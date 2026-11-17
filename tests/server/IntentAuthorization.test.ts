@@ -39,6 +39,7 @@ const config = (c: Partial<GameConfig>): Intent => ({
   config: c,
 });
 const timer: Intent = { type: "toggle_game_start_timer" };
+const fastTrack: Intent = { type: "fast_track_start" };
 const pause: Intent = { type: "toggle_pause", paused: true };
 const spawn: Intent = { type: "spawn", tile: 1 };
 
@@ -177,6 +178,28 @@ describe("authorizeIntent", () => {
       timer,
       host,
       lobby({ hasStarted: true }),
+      409,
+    ],
+
+    [
+      "fast track by a player on a public lobby",
+      fastTrack,
+      player,
+      lobby({ isPublic: true }),
+      null,
+    ],
+    [
+      "fast track by a player on a private lobby",
+      fastTrack,
+      player,
+      lobby(),
+      403,
+    ],
+    [
+      "fast track after the start",
+      fastTrack,
+      player,
+      lobby({ isPublic: true, hasStarted: true }),
       409,
     ],
 

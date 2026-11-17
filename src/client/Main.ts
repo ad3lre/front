@@ -102,6 +102,7 @@ import { initLayout } from "./Layout";
 import { loadModal, prefetchModals, whenModalLoaded } from "./LazyModals";
 import {
   SendKickPlayerIntentEvent,
+  SendFastTrackStartEvent,
   SendToggleGameStartTimer,
   SendUpdateGameConfigIntentEvent,
 } from "./LobbyEvents";
@@ -696,6 +697,10 @@ class Client {
     document.addEventListener(
       "toggle_game_start_timer",
       this.handleToggleGameStartTimer.bind(this),
+    );
+    document.addEventListener(
+      "fast_track_start",
+      this.handleFastTrackStart.bind(this),
     );
     document.addEventListener(
       "update-game-config",
@@ -2330,6 +2335,12 @@ class Client {
   private handleToggleGameStartTimer() {
     if (this.eventBus) {
       this.eventBus.emit(new SendToggleGameStartTimer());
+    }
+  }
+
+  private handleFastTrackStart() {
+    if (this.eventBus) {
+      this.eventBus.emit(new SendFastTrackStartEvent());
     }
   }
 

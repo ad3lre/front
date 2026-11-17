@@ -50,11 +50,9 @@ export class DesktopNavBar extends LitElement {
     window.currentPageId ??= "page-play";
     const currentPage = window.currentPageId;
 
-    // Scaled to 3/4 on compact screens (styles.css), e.g. Poki's frame. The bar,
-    // not the sticky host, so the host's offset below a header ad stays exact.
     return html`
       <nav
-        class="hidden lg:flex w-full bg-zinc-900/90 backdrop-blur-md items-center justify-center gap-8 py-4 shrink-0 z-50 relative compact:[zoom:0.75]"
+        class="hidden lg:flex w-full items-center justify-center shrink-0 z-50 relative"
       >
         <div class="flex flex-col items-center justify-center">
           <div class="h-8">
@@ -68,7 +66,7 @@ export class DesktopNavBar extends LitElement {
         <button
           class="nav-menu-item ${
             currentPage === "page-play" ? "active" : ""
-          } text-white/70 hover:text-malibu-blue  font-medium tracking-wider uppercase cursor-pointer transition-colors [&.active]:text-malibu-blue "
+          } font-medium cursor-pointer transition-colors"
           data-page="page-play"
           data-i18n="main.play"
         ></button>
@@ -77,7 +75,7 @@ export class DesktopNavBar extends LitElement {
           <button
             class="nav-menu-item ${
               currentPage === "page-item-store" ? "active" : ""
-            } text-white/70 hover:text-malibu-blue  font-medium tracking-wider uppercase cursor-pointer transition-colors [&.active]:text-malibu-blue "
+            } font-medium cursor-pointer transition-colors"
             data-page="page-item-store"
             data-i18n="main.store"
             @click=${this._notifications.onStoreClick}
@@ -98,17 +96,17 @@ export class DesktopNavBar extends LitElement {
         <button
           class="nav-menu-item ${
             currentPage === "page-inventory" ? "active" : ""
-          } text-white/70 hover:text-malibu-blue font-medium tracking-wider uppercase cursor-pointer transition-colors [&.active]:text-malibu-blue"
+          } font-medium cursor-pointer transition-colors"
           data-page="page-inventory"
           data-i18n="main.inventory"
         ></button>
         <button
-          class="nav-menu-item text-white/70 hover:text-malibu-blue  font-medium tracking-wider uppercase cursor-pointer transition-colors [&.active]:text-malibu-blue "
+          class="nav-menu-item font-medium cursor-pointer transition-colors"
           data-page="page-leaderboard"
           data-i18n="main.leaderboard"
         ></button>
         <button
-          class="no-game-portal nav-menu-item text-white/70 hover:text-blue-500 font-medium tracking-wider uppercase cursor-pointer transition-colors [&.active]:text-blue-500"
+          class="no-game-portal nav-menu-item font-medium cursor-pointer transition-colors"
           data-page="page-clan"
           data-i18n="main.clans"
         ></button>

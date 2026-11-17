@@ -1,18 +1,10 @@
 import { UserMeResponse } from "@openfront/shared/ApiSchemas";
 import { html } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { responseHasLinkedIdentity } from "../AccountIdentity";
 import { getUserMe } from "../Api";
-import { userAuth } from "../Auth";
-import { gamePortal } from "../GamePortal";
 import type { MatchmakingMode } from "../Matchmaking";
 import { translateText } from "../Utils";
 import { BaseModal } from "./BaseModal";
-import {
-  trustLockIcon,
-  trustRequiredDialog,
-  viewerIsTrusted,
-} from "./LobbyCard";
 import { modalHeader } from "./ui/ModalHeader";
 
 @customElement("ranked-modal")
@@ -23,16 +15,11 @@ export class RankedModal extends BaseModal {
   @state() private elo2v2: number | string = "...";
   @state() private userMeResponse: UserMeResponse | false = false;
   @state() private errorMessage: string | null = null;
-  // Hides the trust lock until /users/@me answers, so a trusted player
-  // doesn't see it flash red first.
   @state() private loading = true;
-  @state() private showTrustRequired = false;
-  // Portal players authenticate through the SDK, not a linked
-  // Discord/Google/email account, so track that separately for ranked.
-  @state() private portalSignedIn = false;
 
-  // Eligible to see/play ranked: a linked account or a signed-in portal one.
-  private isRankedEligible(): boolean {
+  // Guest sessions and linked accounts both resolve to a UserMeResponse;
+  // only a missing session falls through to the generic title subtitle.
+  private hasProfile(): boolean {
     return this.userMeResponse !== false;
   }
 
@@ -72,7 +59,7 @@ export class RankedModal extends BaseModal {
       return;
     }
 
-    if (this.isRankedEligible()) {
+    if (this.hasProfile()) {
       const leaderboard = this.userMeResponse
         ? this.userMeResponse.player.leaderboard
         : undefined;
@@ -84,17 +71,12 @@ export class RankedModal extends BaseModal {
 
   protected override async onOpen(): Promise<void> {
     this.loading = true;
-    this.showTrustRequired = false;
     this.elo = "...";
     this.elo2v2 = "...";
     this.errorMessage = null;
 
     try {
-      const userMe = await getUserMe();
-      this.userMeResponse = userMe;
-      this.portalSignedIn =
-        gamePortal.isOnGamePortal() &&
-        (await gamePortal.getUserProfile()) !== null;
+      this.userMeResponse = await getUserMe();
     } catch (error) {
       console.warn("Failed to fetch user profile for ranked modal", error);
       this.userMeResponse = false;
@@ -126,7 +108,7 @@ export class RankedModal extends BaseModal {
           ${this.renderCard(
             translateText("mode_selector.ranked_1v1_title"),
             this.errorMessage ??
-              (this.isRankedEligible()
+              (this.hasProfile()
                 ? translateText("matchmaking_modal.elo", { elo: this.elo })
                 : translateText("mode_selector.ranked_title")),
             () => this.handleRanked("1v1"),
@@ -134,44 +116,25 @@ export class RankedModal extends BaseModal {
           ${this.renderCard(
             translateText("mode_selector.ranked_2v2_title"),
             this.errorMessage ??
-              (this.isRankedEligible()
+              (this.hasProfile()
                 ? translateText("matchmaking_modal.elo", { elo: this.elo2v2 })
                 : translateText("mode_selector.ranked_title")),
             () => this.handleRanked("2v2"),
           )}
-
         </div>
         <p class="mt-6 text-xs text-white/60 leading-relaxed text-center">
-          Players are matched in queue order. Two-on-two teams are assigned when the match starts.
+          Players are matched in queue order. Two-on-two teams are assigned when
+          the match starts.
         </p>
-        ${
-          this.showTrustRequired
-            ? trustRequiredDialog(
-                this.isRankedEligible(),
-                () => (this.showTrustRequired = false),
-                "ranked",
-              )
-            : ""
-        }
       </div>
     `;
   }
 
-  private renderCard(
-    title: string,
-    subtitle: string,
-    onClick: () => void,
-    wide = false,
-  ) {
-    // Ranked admits trusted accounts only: a green open lock when the
-    // player's account is trusted, a red closed one otherwise.
-    const lock = "";
+  private renderCard(title: string, subtitle: string, onClick: () => void) {
     return html`
       <button
         @click=${onClick}
-        class="${
-          wide ? "sm:col-span-2 " : ""
-        }relative flex flex-col w-full h-28 sm:h-32 rounded-2xl bg-malibu-blue border-0 transition-all duration-200 hover:bg-aquarius hover:scale-[1.03] hover:shadow-[var(--shadow-action-card-hover)] active:bg-malibu-blue/80 active:scale-[0.98] p-6 items-center justify-center gap-3"
+        class="relative flex flex-col w-full h-28 sm:h-32 rounded-2xl bg-malibu-blue border-0 transition-all duration-200 hover:bg-aquarius hover:scale-[1.03] hover:shadow-[var(--shadow-action-card-hover)] active:bg-malibu-blue/80 active:scale-[0.98] p-6 items-center justify-center gap-3"
       >
         <div class="flex flex-col items-center gap-1 text-center">
           <h3
@@ -185,25 +148,13 @@ export class RankedModal extends BaseModal {
             ${subtitle}
           </p>
         </div>
-        ${lock}
       </button>
     `;
   }
 
-  // Whether /users/@me has answered, so the trust tier can be read.
-  private trustKnown(): boolean {
-    return !this.loading && this.errorMessage === null;
-  }
-
-  private async handleRanked(mode: MatchmakingMode) {
-    // Ranked admits trusted accounts only; the popup says how to get there
-    // (sign in first when signed out). Unknown tier: the service decides.
-    if ((await userAuth()) === false) {
-      this.close();
-      window.showPage?.("page-account");
-      return;
-    }
-
+  private handleRanked(mode: MatchmakingMode) {
+    // No account gate: guest JWTs from /auth/refresh are enough to queue.
+    // Matchmaking's connect() refreshes the play token itself.
     document.dispatchEvent(
       new CustomEvent("open-matchmaking", { detail: { mode } }),
     );

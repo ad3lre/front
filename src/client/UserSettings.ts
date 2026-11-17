@@ -22,6 +22,10 @@ import {
 // (verified with madge: 58 cycles before and after, none involving it).
 import { isDesktopShell } from "./DesktopShell";
 import type { RandomNameStyle } from "./PlayerName";
+import {
+  readSchoolTransportMode,
+  writeSchoolTransportMode,
+} from "./SchoolTransport";
 
 export function getDefaultKeybinds(isMac: boolean): Record<string, string> {
   return {
@@ -550,6 +554,15 @@ export class UserSettings {
 
   toggleEmojis() {
     this.setBool("settings.emojis", !this.emojis());
+  }
+
+  /** Force HTTP long-poll (school proxies that strip WebSocket Upgrade). */
+  schoolSafeConnection() {
+    return readSchoolTransportMode() === "poll";
+  }
+
+  setSchoolSafeConnection(on: boolean) {
+    writeSchoolTransportMode(on ? "poll" : "auto");
   }
 
   // The performance overlay's close button needs a direct setter to persist

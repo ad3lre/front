@@ -40,7 +40,6 @@ import { nationsConfigToSlider } from "./utilities/GameConfigHelpers";
 import {
   disabledUnitsBox,
   hostCheatsBox,
-  LOBBY_SETTING_TAG,
   lobbySettingTagText,
   notableLobbySettings,
 } from "./utilities/LobbySettingsSummary";
@@ -63,6 +62,7 @@ export class JoinLobbyModal extends BaseModal {
   @state() private serverTimeOffset: number = 0;
   @state() private isConnecting: boolean = true;
   @state() private lobbyCreatorClientID: string | null = null;
+  @state() private fastTrackPending = false;
   // Subscriber-hosted private lobbies listed in the public browser, shown on
   // the pre-join form.
   @state() private hostedLobbies: PublicGameInfo[] = [];
@@ -191,6 +191,39 @@ export class JoinLobbyModal extends BaseModal {
     `;
   }
 
+  // Public lobbies only: pull startsAt to ~15s so a thin roster is not stuck
+  // behind the queue. Hidden once a countdown is already within 15s.
+  private renderFastTrackButton(secondsRemaining: number | null) {
+    if (this.isConnecting || this.isSpectating) return html``;
+    if (this.gameConfig?.gameType !== GameType.Public) return html``;
+    if (secondsRemaining !== null && secondsRemaining <= 15) return html``;
+    return html`
+      <button
+        type="button"
+        class="front-lobby-fast-track"
+        ?disabled=${this.fastTrackPending}
+        @click=${this.requestFastTrack}
+      >
+        ${
+          this.fastTrackPending
+            ? translateText("public_lobby.fast_track_pending")
+            : translateText("public_lobby.fast_track")
+        }
+      </button>
+    `;
+  }
+
+  private requestFastTrack = () => {
+    if (this.fastTrackPending) return;
+    this.fastTrackPending = true;
+    this.dispatchEvent(
+      new CustomEvent("fast_track_start", {
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  };
+
   protected renderBody() {
     // Pre-join state: show lobby ID input form
     if (!this.currentLobbyId) {
@@ -222,8 +255,8 @@ export class JoinLobbyModal extends BaseModal {
       ? (this.lobbyCreatorClientID ?? "")
       : "";
     return html`
-      <div class="flex flex-col h-full">
-        <div class="flex-1 custom-scrollbar p-6 space-y-4 mr-1">
+      <div class="front-lobby">
+        <div class="front-lobby-body custom-scrollbar">
           ${
             this.isConnecting
               ? html`
@@ -239,73 +272,83 @@ export class JoinLobbyModal extends BaseModal {
                   </div>
                 `
               : html`
-                  ${this.gameConfig ? this.renderGameConfig() : html``}
-                  ${
-                    this.players.length > 0
-                      ? html`
-                          <lobby-player-view
-                            class="mt-6"
-                            .gameMode=${this.gameConfig?.gameMode ?? GameMode.FFA}
-                            .clients=${this.players}
-                            .lobbyCreatorClientID=${hostClientID}
-                            .currentClientID=${this.currentClientID}
-                            .anonymizeNames=${
-                              this.gameConfig?.anonymizeNames ?? false
-                            }
-                            .teamCount=${this.gameConfig?.playerTeams ?? 2}
-                            .isPublicGame=${
-                              this.gameConfig?.gameType === GameType.Public
-                            }
-                            .nationCount=${nationsConfigToSlider(
-                              this.gameConfig?.nations ?? "default",
-                              this.nationCount,
-                            )}
-                          ></lobby-player-view>
-                        `
-                      : ""
-                  }
+                  <div class="front-lobby-layout">
+                    <div class="front-lobby-map">
+                      ${this.gameConfig ? this.renderGameConfig() : html``}
+                    </div>
+                    <div class="front-lobby-side">
+                      ${this.renderLobbyMeta(
+                        statusLabel,
+                        playerCount,
+                        maxPlayers,
+                      )}
+                      ${
+                        this.players.length > 0
+                          ? html`
+                              <div class="front-lobby-players">
+                                <lobby-player-view
+                                  .gameMode=${
+                                    this.gameConfig?.gameMode ?? GameMode.FFA
+                                  }
+                                  .clients=${this.players}
+                                  .lobbyCreatorClientID=${hostClientID}
+                                  .currentClientID=${this.currentClientID}
+                                  .anonymizeNames=${
+                                    this.gameConfig?.anonymizeNames ?? false
+                                  }
+                                  .teamCount=${
+                                    this.gameConfig?.playerTeams ?? 2
+                                  }
+                                  .isPublicGame=${
+                                    this.gameConfig?.gameType ===
+                                    GameType.Public
+                                  }
+                                  .nationCount=${nationsConfigToSlider(
+                                    this.gameConfig?.nations ?? "default",
+                                    this.nationCount,
+                                  )}
+                                ></lobby-player-view>
+                              </div>
+                            `
+                          : ""
+                      }
+                    </div>
+                  </div>
                 `
           }
         </div>
 
-        ${html`
-          <div
-            class="p-6 lg:p-6 border-t border-white/10 bg-black/60 backdrop-blur-md shrink-0 sticky bottom-0 z-10"
-          >
-            <div
-              class="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 flex items-center justify-between gap-3"
-            >
-              <div class="flex flex-col">
-                <span
-                  class="text-[10px] font-bold uppercase tracking-widest text-white/40"
-                  >${translateText("public_lobby.status")}</span
-                >
-                <span class="text-sm font-bold text-white">${statusLabel}</span>
-              </div>
-              ${this.renderSpectateToggle()}
-              ${
-                maxPlayers > 0
-                  ? html`
-                      <div
-                        class="flex items-center gap-2 text-white/80 text-xs font-bold uppercase tracking-widest"
-                      >
-                        <span>${playerCount}/${maxPlayers}</span>
-                        <svg
-                          class="w-4 h-4 text-white"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.972 0 004 15v3H1v-3a3 3 0 013.75-2.906z"
-                          ></path>
-                        </svg>
-                      </div>
-                    `
-                  : html``
-              }
+        <div class="front-lobby-footer">
+          <div class="front-lobby-footer-bar">
+            <div>
+              <p class="front-lobby-meta-label">
+                ${translateText("public_lobby.status")}
+              </p>
+              <p class="front-lobby-meta-status">${statusLabel}</p>
             </div>
+            ${this.renderFastTrackButton(secondsRemaining)}
+            ${this.renderSpectateToggle()}
+            ${
+              maxPlayers > 0
+                ? html`
+                    <div class="front-lobby-footer-count">
+                      <span>${playerCount}/${maxPlayers}</span>
+                      <svg
+                        class="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.972 0 004 15v3H1v-3a3 3 0 013.75-2.906z"
+                        ></path>
+                      </svg>
+                    </div>
+                  `
+                : html``
+            }
           </div>
-        `}
+        </div>
       </div>
     `;
   }
@@ -601,6 +644,7 @@ export class JoinLobbyModal extends BaseModal {
     this.lobbyStartAt = null;
     this.serverTimeOffset = 0;
     this.lobbyCreatorClientID = null;
+    this.fastTrackPending = false;
     this.gameStartAlert.reset();
     this.isConnecting = true;
     this.handledJoinTimeout = false;
@@ -704,6 +748,33 @@ export class JoinLobbyModal extends BaseModal {
 
   // --- Game config rendering ---
 
+  private renderLobbyMeta(
+    statusLabel: string,
+    playerCount: number,
+    maxPlayers: number,
+  ): TemplateResult {
+    const modeLabel = this.gameConfig
+      ? getGameModeLabel(this.gameConfig)
+      : translateText("game_mode.ffa");
+    return html`
+      <div class="front-lobby-meta">
+        <div class="front-lobby-meta-top">
+          <div>
+            <p class="front-lobby-meta-label">${modeLabel}</p>
+            <p class="front-lobby-meta-status">${statusLabel}</p>
+          </div>
+          ${
+            maxPlayers > 0
+              ? html`<div class="front-lobby-meta-count">
+                  ${playerCount}/${maxPlayers}
+                </div>`
+              : html``
+          }
+        </div>
+      </div>
+    `;
+  }
+
   private renderGameConfig(): TemplateResult {
     if (!this.gameConfig) return html``;
 
@@ -716,70 +787,58 @@ export class JoinLobbyModal extends BaseModal {
     const modeSubtitle = getGameModeLabel(c);
 
     const tags = notableLobbySettings(c, this.nationCount).map(
-      (s) =>
-        html`<span class="${LOBBY_SETTING_TAG}"
-          >${lobbySettingTagText(s)}</span
-        >`,
+      (s) => html`<span>${lobbySettingTagText(s)}</span>`,
     );
     const mapInfo = maps.find((m) => m.type === c.gameMap);
     const showDetails = hasMapDetails(mapInfo);
 
     // object-contain, not object-cover: the preview is here to be studied
     // while waiting, so a wide or tall map must show whole rather than cropped
-    // to the box. max-h keeps a tall map from pushing the player list away.
-    // The frame stretches to the height of the settings beside it and centres
-    // the map, so a long list of settings leaves no gap under the preview.
-    // With no settings to show, the preview takes the whole row.
+    // to the panel. The left column frames the map as a full widget; settings
+    // and map details sit under it so the roster can own the right column.
     return html`
-      <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-3">
-        <span class="text-lg font-bold text-white">${mapName}</span>
-        <span class="text-sm text-white/60">${modeSubtitle}</span>
-      </div>
-      <div class="flex flex-col sm:flex-row gap-4 mb-6">
-        <div
-          data-test-map-preview
-          class="flex items-center justify-center w-full ${
-            tags.length > 0 || showDetails ? "sm:w-3/5" : ""
-          } shrink-0 rounded-lg border border-white/10 bg-black/20 overflow-hidden"
-        >
-          <img
-            src=${thumbnailUrl}
-            alt=${mapName ?? c.gameMap}
-            class="block w-full max-h-60 object-contain"
-            @error=${(e: Event) => {
-              const frame = (e.target as HTMLElement).parentElement;
-              if (frame) frame.style.display = "none";
-            }}
-          />
+      <div data-test-map-preview class="front-lobby-map-panel">
+        <img
+          src=${thumbnailUrl}
+          alt=${mapName ?? c.gameMap}
+          class="object-contain"
+          @error=${(e: Event) => {
+            const frame = (e.target as HTMLElement).parentElement;
+            if (frame) frame.style.display = "none";
+          }}
+        />
+        <div class="front-lobby-map-caption">
+          <strong>${mapName}</strong>
+          <span>${modeSubtitle}</span>
         </div>
-        ${
-          tags.length > 0 || showDetails
-            ? html`<div class="flex flex-col gap-3 min-w-0 flex-1">
-                ${
-                  tags.length > 0
-                    ? html`<div
-                        data-test-lobby-settings
-                        class="flex flex-wrap content-start gap-1 uppercase"
-                      >
-                        ${tags}
-                      </div>`
-                    : html``
-                }
-                ${
-                  showDetails
-                    ? html`<div
-                        data-test-map-details
-                        class="flex flex-col gap-1 text-xs text-white/80"
-                      >
-                        ${renderMapDetails(mapInfo)}
-                      </div>`
-                    : html``
-                }
-              </div>`
-            : html``
-        }
       </div>
-      ${disabledUnitsBox(c, "mt-4 mb-6")} ${hostCheatsBox(c, "mt-4 mb-6")}
+      ${
+        tags.length > 0 || showDetails
+          ? html`<div class="front-lobby-map-extras">
+              ${
+                tags.length > 0
+                  ? html`<div
+                      data-test-lobby-settings
+                      class="front-lobby-tags"
+                    >
+                      ${tags}
+                    </div>`
+                  : html``
+              }
+              ${
+                showDetails
+                  ? html`<div
+                      data-test-map-details
+                      class="front-lobby-details"
+                    >
+                      ${renderMapDetails(mapInfo)}
+                    </div>`
+                  : html``
+              }
+            </div>`
+          : html``
+      }
+      ${disabledUnitsBox(c, "", "flat")} ${hostCheatsBox(c, "", "flat")}
     `;
   }
 
@@ -791,6 +850,13 @@ export class JoinLobbyModal extends BaseModal {
       this.serverTimeOffset = calculateServerTimeOffset(lobby.serverTime);
     }
     this.lobbyStartAt = lobby.startsAt ?? null;
+    if (this.lobbyStartAt !== null) {
+      const seconds = getSecondsUntilServerTimestamp(
+        this.lobbyStartAt,
+        this.serverTimeOffset,
+      );
+      if (seconds <= 15) this.fastTrackPending = false;
+    }
     this.syncCountdownTimer();
     if (lobby.gameConfig) {
       const mapChanged = this.gameConfig?.gameMap !== lobby.gameConfig.gameMap;

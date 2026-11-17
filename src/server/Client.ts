@@ -51,6 +51,9 @@ export class Client {
     // undefined for guests, players who hide their level, or when the API sent
     // no progress. Display-only.
     public readonly levelBadge: LevelBadge | undefined = undefined,
+    // Matchmaking bot (JWT claim bot:true). Stamped onto gameStartInfo so
+    // every client drives this seat with NationExecution.
+    public readonly isBot: boolean = false,
   ) {
     this.wireLevelBadge = packLevelBadge(levelBadge);
   }

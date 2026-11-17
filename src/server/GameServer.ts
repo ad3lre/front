@@ -465,6 +465,21 @@ export class GameServer {
         return finish({ status: 200 });
       }
 
+      case "fast_track_start": {
+        const FAST_TRACK_MS = 15_000;
+        const target = Date.now() + FAST_TRACK_MS;
+        // Do not push an already-sooner countdown later.
+        if (this.startsAt === undefined || this.startsAt > target) {
+          this.setStartsAt(target);
+          this.log.info("fast track start armed", {
+            gameID: this.id,
+            clientID: actor.clientID,
+            startsAt: target,
+          });
+        }
+        return finish({ status: 200 });
+      }
+
       case "toggle_pause": {
         const outcome = finish({ status: 200 });
         // Pausing: flush the intent into a turn before isPaused short-circuits
@@ -1142,6 +1157,7 @@ export class GameServer {
         isLobbyCreator: this.lobbyCreatorID === c.clientID,
         friends: friendsFor(c),
         teamIndex: this.matchmakingTeamIndex(c),
+        ...(c.isBot ? { isBot: true as const } : {}),
       })),
       tribes: this.tribes,
     });

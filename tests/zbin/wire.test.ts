@@ -114,6 +114,7 @@ const SAMPLE_INTENTS: StampedIntent[] = [
     config: { bots: 5, instantBuild: true },
   },
   { type: "toggle_game_start_timer", clientID: P1 },
+  { type: "fast_track_start", clientID: P1 },
 ];
 
 const SERVER_MESSAGES: ServerMessage[] = [
