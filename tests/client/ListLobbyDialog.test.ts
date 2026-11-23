@@ -60,6 +60,26 @@ describe("ListLobbyDialog player cap", () => {
   });
 });
 
+describe("ListLobbyDialog start length", () => {
+  it("emits autoStartMs from the seconds slider", async () => {
+    const el = dialog(1);
+    document.body.appendChild(el);
+    await el.updateComplete;
+    (
+      el as unknown as { startSeconds: number }
+    ).startSeconds = 90;
+    let received: { autoStartMs: number } | undefined;
+    el.addEventListener("confirm", ((e: CustomEvent) => {
+      received = e.detail;
+    }) as EventListener);
+    (
+      el as unknown as { handleConfirm(maxPlayers: number): void }
+    ).handleConfirm(10);
+    expect(received?.autoStartMs).toBe(90_000);
+    el.remove();
+  });
+});
+
 describe("ListLobbyDialog suggested cap", () => {
   const cap = (el: ListLobbyDialog): number =>
     (el as unknown as { maxPlayers: number }).maxPlayers;

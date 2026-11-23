@@ -16,8 +16,8 @@ export interface ListLobbyOptions {
   maxPlayers: number;
 }
 
-const MIN_START_MINUTES = MIN_HOSTED_LOBBY_AUTO_START_MS / 60_000;
-const MAX_START_MINUTES = HOSTED_LOBBY_AUTO_START_MS / 60_000;
+const MIN_START_SECONDS = MIN_HOSTED_LOBBY_AUTO_START_MS / 1000;
+const MAX_START_SECONDS = HOSTED_LOBBY_AUTO_START_MS / 1000;
 
 /**
  * Shown when the host makes a lobby public: picks how long until it starts
@@ -37,7 +37,7 @@ export class ListLobbyDialog extends LitElement {
   // down to or below currentPlayers.
   @property({ attribute: false }) playerTeams: TeamCountConfig | undefined;
 
-  @state() private startMinutes = MAX_START_MINUTES;
+  @state() private startSeconds = MAX_START_SECONDS;
   @state() private maxPlayers = MAX_HOSTED_LOBBY_PLAYERS;
 
   private portal: HTMLDivElement | null = null;
@@ -115,13 +115,13 @@ export class ListLobbyDialog extends LitElement {
           </p>
           <div class="flex flex-col gap-5 mb-6">
             <fluent-slider
-              .min=${MIN_START_MINUTES}
-              .max=${MAX_START_MINUTES}
+              .min=${MIN_START_SECONDS}
+              .max=${MAX_START_SECONDS}
               .step=${1}
-              .value=${this.startMinutes}
-              labelKey="host_modal.list_lobby_start_minutes"
+              .value=${this.startSeconds}
+              labelKey="host_modal.list_lobby_start_seconds"
               @value-changed=${(e: CustomEvent<{ value: number }>) =>
-                (this.startMinutes = e.detail.value)}
+                (this.startSeconds = e.detail.value)}
             ></fluent-slider>
             <fluent-slider
               .min=${minPlayers}
@@ -156,7 +156,7 @@ export class ListLobbyDialog extends LitElement {
     this.dispatchEvent(
       new CustomEvent<ListLobbyOptions>("confirm", {
         detail: {
-          autoStartMs: this.startMinutes * 60_000,
+          autoStartMs: this.startSeconds * 1000,
           maxPlayers,
         },
       }),
