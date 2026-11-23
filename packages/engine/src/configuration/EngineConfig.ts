@@ -351,6 +351,11 @@ export class EngineConfig extends Config {
           (numUnits: number) => Math.min(1_000_000, (numUnits + 1) * 250_000),
           UnitType.Warship,
         );
+      case UnitType.Submarine:
+        return this.costWrapper(
+          (numUnits: number) => Math.min(800_000, (numUnits + 1) * 200_000),
+          UnitType.Submarine,
+        );
       case UnitType.Port:
         return this.costWrapper(
           (numUnits: number) => Math.min(1_000_000, pow2(numUnits) * 125_000),
@@ -359,6 +364,16 @@ export class EngineConfig extends Config {
         );
       case UnitType.AtomBomb:
         return this.costWrapper(() => 750_000, UnitType.AtomBomb);
+      case UnitType.CruiseMissile:
+        return this.costWrapper(
+          (numUnits: number) => Math.min(400_000, (numUnits + 1) * 100_000),
+          UnitType.CruiseMissile,
+        );
+      case UnitType.Bomber:
+        return this.costWrapper(
+          (numUnits: number) => Math.min(600_000, (numUnits + 1) * 150_000),
+          UnitType.Bomber,
+        );
       case UnitType.HydrogenBomb:
         return this.costWrapper(() => 5_000_000, UnitType.HydrogenBomb);
       case UnitType.MIRV:
@@ -377,6 +392,11 @@ export class EngineConfig extends Config {
         return this.costWrapper(
           (numUnits: number) => Math.min(250_000, (numUnits + 1) * 50_000),
           UnitType.DefensePost,
+        );
+      case UnitType.Artillery:
+        return this.costWrapper(
+          (numUnits: number) => Math.min(400_000, (numUnits + 1) * 80_000),
+          UnitType.Artillery,
         );
       case UnitType.SAMLauncher:
         return this.costWrapper(
@@ -688,6 +708,10 @@ export class EngineConfig extends Config {
       case UnitType.AtomBomb:
       case UnitType.HydrogenBomb:
         return 10;
+      case UnitType.CruiseMissile:
+        return 8;
+      case UnitType.Bomber:
+        return 6;
       case UnitType.MIRV:
         return 15;
       case UnitType.MIRVWarhead:

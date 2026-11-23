@@ -3,10 +3,13 @@ import { AllianceExtensionExecutionSnapshot } from "../execution/alliance/Allian
 import { AllianceRejectExecutionSnapshot } from "../execution/alliance/AllianceRejectExecution";
 import { AllianceRequestExecutionSnapshot } from "../execution/alliance/AllianceRequestExecution";
 import { BreakAllianceExecutionSnapshot } from "../execution/alliance/BreakAllianceExecution";
+import { ArtilleryExecutionSnapshot } from "../execution/ArtilleryExecution";
 import { AttackExecutionSnapshot } from "../execution/AttackExecution";
 import { BoatRetreatExecutionSnapshot } from "../execution/BoatRetreatExecution";
+import { BomberExecutionSnapshot } from "../execution/BomberExecution";
 import { CityExecutionSnapshot } from "../execution/CityExecution";
 import { ConstructionExecutionSnapshot } from "../execution/ConstructionExecution";
+import { CruiseMissileExecutionSnapshot } from "../execution/CruiseMissileExecution";
 import { DefensePostExecutionSnapshot } from "../execution/DefensePostExecution";
 import { DeleteUnitExecutionSnapshot } from "../execution/DeleteUnitExecution";
 import { DonateGoldExecutionSnapshot } from "../execution/DonateGoldExecution";
@@ -56,11 +59,14 @@ export const EXECUTION_SNAPSHOT_TYPES = [
   AllianceExtensionExecutionSnapshot,
   AllianceRejectExecutionSnapshot,
   AllianceRequestExecutionSnapshot,
+  ArtilleryExecutionSnapshot,
   AttackExecutionSnapshot,
   BoatRetreatExecutionSnapshot,
+  BomberExecutionSnapshot,
   BreakAllianceExecutionSnapshot,
   CityExecutionSnapshot,
   ConstructionExecutionSnapshot,
+  CruiseMissileExecutionSnapshot,
   DefensePostExecutionSnapshot,
   DeleteUnitExecutionSnapshot,
   DonateGoldExecutionSnapshot,

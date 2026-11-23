@@ -1609,12 +1609,16 @@ export class PlayerImpl implements Player {
         return this.nukeSpawn(targetTile, unitType);
       case UnitType.AtomBomb:
       case UnitType.HydrogenBomb:
+      case UnitType.CruiseMissile:
         return this.nukeSpawn(targetTile, unitType);
+      case UnitType.Bomber:
+        return this.bomberSpawn(targetTile);
       case UnitType.MIRVWarhead:
         return targetTile;
       case UnitType.Port:
         return this.portSpawn(targetTile, validTiles);
       case UnitType.Warship:
+      case UnitType.Submarine:
         return this.warshipSpawn(targetTile);
       case UnitType.Shell:
       case UnitType.SAMMissile:
@@ -1630,10 +1634,39 @@ export class PlayerImpl implements Player {
       case UnitType.SAMLauncher:
       case UnitType.City:
       case UnitType.Factory:
+      case UnitType.Artillery:
         return this.landBasedStructureSpawn(targetTile, validTiles);
       default:
         assertNever(unitType);
     }
+  }
+
+  /** Bombers launch from the nearest owned city (same spirit as silo-for-nukes). */
+  bomberSpawn(tile: TileRef): TileRef | false {
+    const mg = this.mg;
+    if (mg.isSpawnImmunityActive()) {
+      return false;
+    }
+    if (mg.isImpassable(tile)) {
+      return false;
+    }
+    const owner = mg.owner(tile);
+    const gameOver =
+      mg.getWinner() !== null &&
+      mg.config().gameConfig().gameType !== GameType.Singleplayer;
+    if (owner.isPlayer()) {
+      if (this.isOnSameTeam(owner) && !gameOver) {
+        return false;
+      }
+    }
+    const readyCities = this.units(UnitType.City).filter(
+      (city) => city.isActive() && !city.isUnderConstruction(),
+    );
+    readyCities.sort(
+      (a, b) =>
+        mg.manhattanDist(a.tile(), tile) - mg.manhattanDist(b.tile(), tile),
+    );
+    return readyCities[0]?.tile() ?? false;
   }
 
   nukeSpawn(tile: TileRef, nukeType: UnitType): TileRef | false {
@@ -1676,10 +1709,14 @@ export class PlayerImpl implements Player {
       }
     }
 
-    // only get missilesilos that are not on cooldown and not under construction
+    // only get missilesilos that are not on cooldown, not under construction,
+    // and not cruise-disabled
     const readySilos = this.units(UnitType.MissileSilo).filter(
       (silo) =>
-        silo.isActive() && !silo.isInCooldown() && !silo.isUnderConstruction(),
+        silo.isActive() &&
+        !silo.isInCooldown() &&
+        !silo.isUnderConstruction() &&
+        !silo.isCruiseDisabled(),
     );
     readySilos.sort(
       (a, b) =>

@@ -438,7 +438,13 @@ export class MapPlaylist {
         : "default";
 
     // Build disabledUnits from modifiers
-    const disabledUnits: UnitType[] = [];
+    const disabledUnits: UnitType[] = [
+      // Experimental military shop units stay off in public FFA until tuned.
+      UnitType.CruiseMissile,
+      UnitType.Submarine,
+      UnitType.Artillery,
+      UnitType.Bomber,
+    ];
     if (isNukesDisabled) {
       disabledUnits.push(
         UnitType.MissileSilo,

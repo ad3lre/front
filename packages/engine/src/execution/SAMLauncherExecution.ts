@@ -1,5 +1,9 @@
 import { TileRef } from "@openfront/engine-api/game/GameMap";
-import { GameType, UnitType } from "@openfront/engine-api/game/GameTypes";
+import {
+  GameType,
+  SamInterceptable,
+  UnitType,
+} from "@openfront/engine-api/game/GameTypes";
 import { PseudoRandom } from "@openfront/engine-lib/PseudoRandom";
 import {
   zInt,
@@ -268,7 +272,7 @@ class SAMTargetingSystem {
     const nukes = this.mg.nearbyUnits(
       samTile,
       detectionRange,
-      [UnitType.AtomBomb, UnitType.HydrogenBomb, UnitType.MIRVWarhead],
+      SamInterceptable.types,
       this.isTargetableNearbyUnit,
     );
 
@@ -355,7 +359,7 @@ export class SAMLauncherExecution implements Execution {
       this.targetingSystem.onLevelUp();
     }
 
-    if (this.sam.isUnderConstruction()) {
+    if (this.sam.isUnderConstruction() || this.sam.isCruiseDisabled()) {
       return;
     }
 
@@ -394,7 +398,8 @@ export class SAMLauncherExecution implements Execution {
     if (
       this.mg.unitCount(UnitType.AtomBomb) === 0 &&
       this.mg.unitCount(UnitType.HydrogenBomb) === 0 &&
-      this.mg.unitCount(UnitType.MIRVWarhead) === 0
+      this.mg.unitCount(UnitType.MIRVWarhead) === 0 &&
+      this.mg.unitCount(UnitType.CruiseMissile) === 0
     ) {
       return;
     }

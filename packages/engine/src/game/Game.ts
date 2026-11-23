@@ -67,6 +67,10 @@ export interface UnitParamsMap {
     patrolTile: TileRef;
   };
 
+  [UnitType.Submarine]: {
+    patrolTile: TileRef;
+  };
+
   [UnitType.Shell]: Record<string, never>;
 
   [UnitType.SAMMissile]: {
@@ -85,6 +89,11 @@ export interface UnitParamsMap {
     trajectory: TileRef[];
   };
 
+  [UnitType.CruiseMissile]: {
+    targetTile?: number;
+    trajectory: TileRef[];
+  };
+
   [UnitType.MIRV]: {
     targetTile?: number;
     targetPlayer?: Player | TerraNullius;
@@ -93,6 +102,10 @@ export interface UnitParamsMap {
   [UnitType.MIRVWarhead]: {
     targetTile?: number;
     trajectory: TileRef[];
+  };
+
+  [UnitType.Bomber]: {
+    targetTile?: number;
   };
 
   [UnitType.TradeShip]: {
@@ -115,6 +128,8 @@ export interface UnitParamsMap {
   [UnitType.SAMLauncher]: Record<string, never>;
 
   [UnitType.City]: Record<string, never>;
+
+  [UnitType.Artillery]: Record<string, never>;
 }
 
 // Type helper to get params type for a specific unit type
@@ -291,6 +306,14 @@ export interface Unit extends UnitLike {
   // Construction phase on structures
   isUnderConstruction(): boolean;
   setUnderConstruction(underConstruction: boolean): void;
+
+  /** True while a cruise missile has disabled this structure (first hit). */
+  isCruiseDisabled(): boolean;
+  /**
+   * Apply a cruise missile hit. First hit disables; second destroys.
+   * Returns whether the structure should be deleted by the caller.
+   */
+  recordCruiseHit(): "disabled" | "destroyed";
 
   // Upgradable Structures
   level(): number;

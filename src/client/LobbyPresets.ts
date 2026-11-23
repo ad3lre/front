@@ -77,14 +77,34 @@ export const LobbyPresetSchema = z.object({
 export type LobbyPreset = z.infer<typeof LobbyPresetSchema>;
 
 /**
+ * Built-in "Military" preset: enables Cruise Missile, Submarine, Artillery,
+ * and Bomber (clears the default experimental-military disables). Callers
+ * merge this into the player's preset list when seeding empty storage.
+ */
+export const MILITARY_LOBBY_PRESET: LobbyPreset = {
+  name: "Military",
+  createdAt: 0,
+  config: {
+    gameMap: GameMapType.World,
+    difficulty: Difficulty.Medium,
+    gameMode: GameMode.FFA,
+    teamCount: 2,
+    bots: 400,
+    // Empty disabledUnits = all units on, including the experimental military set.
+    disabledUnits: [],
+  },
+};
+
+/**
  * Safely parses raw JSON from storage into an array of validated LobbyPreset objects.
  * Returns an empty array if parsing fails, input is null/empty, or no valid presets exist.
+ * Always ensures the built-in Military preset is present.
  */
 export function parseLobbyPresetsJson(rawJson: string | null): LobbyPreset[] {
-  if (!rawJson) return [];
+  if (!rawJson) return [MILITARY_LOBBY_PRESET];
   try {
     const parsed = JSON.parse(rawJson);
-    if (!Array.isArray(parsed)) return [];
+    if (!Array.isArray(parsed)) return [MILITARY_LOBBY_PRESET];
     const valid: LobbyPreset[] = [];
     for (const item of parsed) {
       const result = LobbyPresetSchema.safeParse(item);
@@ -92,9 +112,12 @@ export function parseLobbyPresetsJson(rawJson: string | null): LobbyPreset[] {
         valid.push(result.data);
       }
     }
+    if (!valid.some((p) => p.name === MILITARY_LOBBY_PRESET.name)) {
+      valid.unshift(MILITARY_LOBBY_PRESET);
+    }
     return valid;
   } catch {
-    return [];
+    return [MILITARY_LOBBY_PRESET];
   }
 }
 

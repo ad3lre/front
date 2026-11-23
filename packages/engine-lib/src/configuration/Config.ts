@@ -214,6 +214,9 @@ export class Config {
       case UnitType.Warship:
         info = { maxHealth: 1000 };
         break;
+      case UnitType.Submarine:
+        info = { maxHealth: 600 };
+        break;
       case UnitType.Shell:
         info = { damage: 250 };
         break;
@@ -230,6 +233,9 @@ export class Config {
         };
         break;
       case UnitType.DefensePost:
+        info = { constructionDuration: this.instantBuild() ? 0 : 5 * 10 };
+        break;
+      case UnitType.Artillery:
         info = { constructionDuration: this.instantBuild() ? 0 : 5 * 10 };
         break;
       case UnitType.SAMLauncher:
@@ -253,6 +259,8 @@ export class Config {
       case UnitType.HydrogenBomb:
       case UnitType.MIRV:
       case UnitType.MIRVWarhead:
+      case UnitType.CruiseMissile:
+      case UnitType.Bomber:
       case UnitType.TradeShip:
       case UnitType.Train:
         info = {};
@@ -427,8 +435,30 @@ export class Config {
         return { inner: 12, outer: 30 };
       case UnitType.HydrogenBomb:
         return { inner: 80, outer: 100 };
+      case UnitType.CruiseMissile:
+        // Tiny radius: cruise is meant to hit a structure, not flatten land.
+        return { inner: 1, outer: 2 };
+      case UnitType.Bomber:
+        return { inner: 6, outer: 14 };
     }
     throw new Error(`Unknown nuke type: ${unitType}`);
+  }
+
+  artilleryRange(): number {
+    return 50;
+  }
+
+  artilleryShellAttackRate(): number {
+    return 40;
+  }
+
+  /** Warships only detect/engage subs inside this Manhattan distance. */
+  submarineDetectionRange(): number {
+    return 25;
+  }
+
+  cruiseDisableDuration(): number {
+    return 30 * 10; // 30 seconds
   }
 
   nukeAllianceBreakThreshold(): number {

@@ -50,6 +50,9 @@ export class UnitImpl implements Unit {
   private _destroyer: Player | undefined = undefined;
   private _lastSetSafeFromPirates: number; // Only for trade ships
   private _underConstruction: boolean = false;
+  /** Tick until which a cruise hit keeps this structure offline; 0 = none. */
+  private _cruiseDisabledUntil: number = 0;
+  private _cruiseHitCount: number = 0;
   private _lastOwner: PlayerImpl | null = null;
   private _troops: number;
   // Number of missiles in cooldown, if empty all missiles are ready.
@@ -117,9 +120,11 @@ export class UnitImpl implements Unit {
 
     switch (this._type) {
       case UnitType.Warship:
+      case UnitType.Submarine:
       case UnitType.Port:
       case UnitType.MissileSilo:
       case UnitType.DefensePost:
+      case UnitType.Artillery:
       case UnitType.SAMLauncher:
       case UnitType.City:
       case UnitType.Factory:
@@ -251,9 +256,11 @@ export class UnitImpl implements Unit {
     this.clearPendingDeletion();
     switch (this._type) {
       case UnitType.Warship:
+      case UnitType.Submarine:
       case UnitType.Port:
       case UnitType.MissileSilo:
       case UnitType.DefensePost:
+      case UnitType.Artillery:
       case UnitType.SAMLauncher:
       case UnitType.City:
       case UnitType.Factory:
@@ -385,10 +392,12 @@ export class UnitImpl implements Unit {
           break;
         case UnitType.City:
         case UnitType.DefensePost:
+        case UnitType.Artillery:
         case UnitType.MissileSilo:
         case UnitType.Port:
         case UnitType.SAMLauncher:
         case UnitType.Warship:
+        case UnitType.Submarine:
         case UnitType.Factory:
           this.mg.stats().unitDestroy(destroyer, this._type);
           this.mg.stats().unitLose(this.owner(), this._type);
@@ -551,6 +560,23 @@ export class UnitImpl implements Unit {
       this._owner._myUnitsVersion++; // unitsOwned() weighs under-construction units differently
       this.mg.addUpdate(this.toUpdate());
     }
+  }
+
+  isCruiseDisabled(): boolean {
+    return (
+      this._cruiseHitCount > 0 && this.mg.ticks() < this._cruiseDisabledUntil
+    );
+  }
+
+  recordCruiseHit(): "disabled" | "destroyed" {
+    this._cruiseHitCount++;
+    if (this._cruiseHitCount >= 2) {
+      return "destroyed";
+    }
+    this._cruiseDisabledUntil =
+      this.mg.ticks() + this.mg.config().cruiseDisableDuration();
+    this.mg.addUpdate(this.toUpdate());
+    return "disabled";
   }
 
   hash(): number {
@@ -842,6 +868,8 @@ export class UnitImpl implements Unit {
       destroyer: w.playerOrNull(this._destroyer),
       lastSetSafeFromPirates: this._lastSetSafeFromPirates,
       underConstruction: this._underConstruction,
+      cruiseDisabledUntil: this._cruiseDisabledUntil,
+      cruiseHitCount: this._cruiseHitCount,
       lastOwner: w.playerOrNull(this._lastOwner),
       troops: this._troops,
       missileTimerQueue: [...this._missileTimerQueue],
@@ -894,6 +922,8 @@ export class UnitImpl implements Unit {
     this._destroyer = r.playerOrNull(s.destroyer) ?? undefined;
     this._lastSetSafeFromPirates = s.lastSetSafeFromPirates;
     this._underConstruction = s.underConstruction;
+    this._cruiseDisabledUntil = s.cruiseDisabledUntil ?? 0;
+    this._cruiseHitCount = s.cruiseHitCount ?? 0;
     this._lastOwner = r.playerOrNull(s.lastOwner) as PlayerImpl | null;
     this._troops = s.troops;
     this._missileTimerQueue = [...s.missileTimerQueue];
@@ -950,6 +980,8 @@ export const UnitSnapshot = snapshotType({
     destroyer: zPlayerRef().nullable(),
     lastSetSafeFromPirates: zInt(),
     underConstruction: z.boolean(),
+    cruiseDisabledUntil: zInt().optional(),
+    cruiseHitCount: zInt().optional(),
     lastOwner: zPlayerRef().nullable(),
     troops: zNum(),
     missileTimerQueue: z.array(zInt()),

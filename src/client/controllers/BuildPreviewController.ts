@@ -49,15 +49,25 @@ import { GameView } from "../view";
 
 /** True for nuke types (AtomBomb, HydrogenBomb): ghost is preserved after placement so user can place multiple or keep selection (Enter/key confirm). */
 export function shouldPreserveGhostAfterBuild(unitType: UnitType): boolean {
-  return unitType === UnitType.AtomBomb || unitType === UnitType.HydrogenBomb;
+  return (
+    unitType === UnitType.AtomBomb ||
+    unitType === UnitType.HydrogenBomb ||
+    unitType === UnitType.CruiseMissile ||
+    unitType === UnitType.Bomber
+  );
 }
 
 function requiresMissileSilo(unitType: UnitType | null | undefined): boolean {
   return (
     unitType === UnitType.AtomBomb ||
     unitType === UnitType.HydrogenBomb ||
-    unitType === UnitType.MIRV
+    unitType === UnitType.MIRV ||
+    unitType === UnitType.CruiseMissile
   );
+}
+
+function requiresCity(unitType: UnitType | null | undefined): boolean {
+  return unitType === UnitType.Bomber;
 }
 
 // tSamIntercept value used to flag an untargetable (impassable) destination:
@@ -506,6 +516,14 @@ export class BuildPreviewController implements Controller {
       this.removeGhostStructure();
       return true;
     }
+    if (
+      myPlayer &&
+      requiresCity(ghostType) &&
+      myPlayer.units(UnitType.City).length === 0
+    ) {
+      this.removeGhostStructure();
+      return true;
+    }
     if (this.ghostUnit) {
       if (target === null) {
         this.removeGhostStructure();
@@ -779,7 +797,11 @@ export class BuildPreviewController implements Controller {
   private canShowNukeTrajectory(tileRef: TileRef | undefined): boolean {
     if (!this.ghostUnit || tileRef === undefined) return false;
     const type = this.ghostUnit.buildableUnit.type;
-    return type === UnitType.AtomBomb || type === UnitType.HydrogenBomb;
+    return (
+      type === UnitType.AtomBomb ||
+      type === UnitType.HydrogenBomb ||
+      type === UnitType.CruiseMissile
+    );
   }
 
   private buildTrajectoryStatic(
@@ -1230,7 +1252,8 @@ export class BuildPreviewController implements Controller {
       duration <= 0 ||
       (unitType !== UnitType.AtomBomb &&
         unitType !== UnitType.HydrogenBomb &&
-        unitType !== UnitType.MIRV)
+        unitType !== UnitType.MIRV &&
+        unitType !== UnitType.CruiseMissile)
     ) {
       return false;
     }

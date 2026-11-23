@@ -1490,6 +1490,46 @@ export class UserSettingModal extends BaseModal {
       ></setting-keybind>
 
       <setting-keybind
+        action="buildCruiseMissile"
+        label=${translateText("user_setting.build_cruise_missile")}
+        description=${translateText("user_setting.build_hotkey_desc")}
+        defaultKey=${this.defaultKeybinds.buildCruiseMissile}
+        .value=${this.getKeyValue("buildCruiseMissile")}
+        .display=${this.getKeyChar("buildCruiseMissile")}
+        @change=${this.handleKeybindChange}
+      ></setting-keybind>
+
+      <setting-keybind
+        action="buildSubmarine"
+        label=${translateText("user_setting.build_submarine")}
+        description=${translateText("user_setting.build_hotkey_desc")}
+        defaultKey=${this.defaultKeybinds.buildSubmarine}
+        .value=${this.getKeyValue("buildSubmarine")}
+        .display=${this.getKeyChar("buildSubmarine")}
+        @change=${this.handleKeybindChange}
+      ></setting-keybind>
+
+      <setting-keybind
+        action="buildArtillery"
+        label=${translateText("user_setting.build_artillery")}
+        description=${translateText("user_setting.build_hotkey_desc")}
+        defaultKey=${this.defaultKeybinds.buildArtillery}
+        .value=${this.getKeyValue("buildArtillery")}
+        .display=${this.getKeyChar("buildArtillery")}
+        @change=${this.handleKeybindChange}
+      ></setting-keybind>
+
+      <setting-keybind
+        action="buildBomber"
+        label=${translateText("user_setting.build_bomber")}
+        description=${translateText("user_setting.build_hotkey_desc")}
+        defaultKey=${this.defaultKeybinds.buildBomber}
+        .value=${this.getKeyValue("buildBomber")}
+        .display=${this.getKeyChar("buildBomber")}
+        @change=${this.handleKeybindChange}
+      ></setting-keybind>
+
+      <setting-keybind
         action="buildScrollModifier"
         .allowModifiers=${true}
         label=${translateText("user_setting.build_scroll_modifier")}

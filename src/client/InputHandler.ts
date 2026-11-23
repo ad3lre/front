@@ -137,11 +137,15 @@ export function highlightTypesForUnit(
   switch (unitType) {
     case UnitType.AtomBomb:
     case UnitType.HydrogenBomb:
+    case UnitType.CruiseMissile:
       return [UnitType.MissileSilo, UnitType.SAMLauncher];
     case UnitType.Warship:
+    case UnitType.Submarine:
       return [UnitType.Port];
     case UnitType.MIRV:
       return [UnitType.MissileSilo];
+    case UnitType.Bomber:
+      return [UnitType.City];
     default:
       return [unitType];
   }
@@ -652,6 +656,10 @@ export class InputHandler {
       "buildHydrogenBomb",
       "buildWarship",
       "buildMIRV",
+      "buildCruiseMissile",
+      "buildSubmarine",
+      "buildArtillery",
+      "buildBomber",
     ];
     buildKeybinds = buildKeybinds.map((i: string): string => {
       return this.keybinds[i];
@@ -1905,6 +1913,10 @@ export class InputHandler {
       { key: "buildHydrogenBomb", type: UnitType.HydrogenBomb },
       { key: "buildWarship", type: UnitType.Warship },
       { key: "buildMIRV", type: UnitType.MIRV },
+      { key: "buildCruiseMissile", type: UnitType.CruiseMissile },
+      { key: "buildSubmarine", type: UnitType.Submarine },
+      { key: "buildArtillery", type: UnitType.Artillery },
+      { key: "buildBomber", type: UnitType.Bomber },
     ];
     for (const { key, type } of buildKeybinds) {
       if (this.keybindMatchesEvent({ code, shiftKey }, this.keybinds[key]))

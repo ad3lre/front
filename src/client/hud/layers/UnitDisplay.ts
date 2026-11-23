@@ -60,6 +60,8 @@ export class UnitDisplay extends LitElement implements Controller {
   private keyboardLayout = new KeyboardLayoutController(this);
   private _cities = 0;
   private _warships = 0;
+  private _submarines = 0;
+  private _artillery = 0;
   private _factories = 0;
   private _missileSilo = 0;
   private _port = 0;
@@ -556,11 +558,18 @@ export class UnitDisplay extends LitElement implements Controller {
       case UnitType.AtomBomb:
       case UnitType.HydrogenBomb:
       case UnitType.MIRV:
+      case UnitType.CruiseMissile:
         return (
           this.cost(item) <= (player?.gold() ?? 0n) &&
           (player?.units(UnitType.MissileSilo).length ?? 0) > 0
         );
+      case UnitType.Bomber:
+        return (
+          this.cost(item) <= (player?.gold() ?? 0n) &&
+          (player?.units(UnitType.City).length ?? 0) > 0
+        );
       case UnitType.Warship:
+      case UnitType.Submarine:
         return (
           this.cost(item) <= (player?.gold() ?? 0n) &&
           (player?.units(UnitType.Port).length ?? 0) > 0
@@ -593,6 +602,8 @@ export class UnitDisplay extends LitElement implements Controller {
     this._samLauncher = player.totalUnitLevels(UnitType.SAMLauncher);
     this._factories = player.totalUnitLevels(UnitType.Factory);
     this._warships = player.totalUnitLevels(UnitType.Warship);
+    this._submarines = player.totalUnitLevels(UnitType.Submarine);
+    this._artillery = player.totalUnitLevels(UnitType.Artillery);
     this.requestUpdate();
   }
 
@@ -686,11 +697,39 @@ export class UnitDisplay extends LitElement implements Controller {
               this.getHotkey("buildWarship", "Digit7"),
             )}
             ${this.renderUnitItem(
+              warshipIcon,
+              this._submarines,
+              UnitType.Submarine,
+              "submarine",
+              this.getHotkey("buildSubmarine", "F7"),
+            )}
+            ${this.renderUnitItem(
+              defensePostIcon,
+              this._artillery,
+              UnitType.Artillery,
+              "artillery",
+              this.getHotkey("buildArtillery", "F8"),
+            )}
+            ${this.renderUnitItem(
               atomBombIcon,
               null,
               UnitType.AtomBomb,
               "atom_bomb",
               this.getHotkey("buildAtomBomb", "Digit8"),
+            )}
+            ${this.renderUnitItem(
+              atomBombIcon,
+              null,
+              UnitType.CruiseMissile,
+              "cruise_missile",
+              this.getHotkey("buildCruiseMissile", "F6"),
+            )}
+            ${this.renderUnitItem(
+              hydrogenBombIcon,
+              null,
+              UnitType.Bomber,
+              "bomber",
+              this.getHotkey("buildBomber", "F9"),
             )}
             ${this.renderUnitItem(
               hydrogenBombIcon,

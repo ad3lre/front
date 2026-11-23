@@ -14,7 +14,10 @@ import type {
   SnapshotReader,
   SnapshotWriter,
 } from "../snapshot/SnapshotContext";
+import { ArtilleryExecution } from "./ArtilleryExecution";
+import { BomberExecution } from "./BomberExecution";
 import { CityExecution } from "./CityExecution";
+import { CruiseMissileExecution } from "./CruiseMissileExecution";
 import { DefensePostExecution } from "./DefensePostExecution";
 import { FactoryExecution } from "./FactoryExecution";
 import { MirvExecution } from "./MIRVExecution";
@@ -144,6 +147,26 @@ export class ConstructionExecution implements Execution {
           new WarshipExecution({ owner: player, patrolTile: this.tile }),
         );
         break;
+      case UnitType.Submarine:
+        this.mg.addExecution(
+          new WarshipExecution(
+            { owner: player, patrolTile: this.tile },
+            UnitType.Submarine,
+          ),
+        );
+        break;
+      case UnitType.CruiseMissile:
+        this.mg.addExecution(
+          new CruiseMissileExecution(
+            player,
+            this.tile,
+            this.rocketDirectionUp ?? true,
+          ),
+        );
+        break;
+      case UnitType.Bomber:
+        this.mg.addExecution(new BomberExecution(player, this.tile));
+        break;
       case UnitType.Port:
         this.mg.addExecution(new PortExecution(this.structure!));
         break;
@@ -152,6 +175,9 @@ export class ConstructionExecution implements Execution {
         break;
       case UnitType.DefensePost:
         this.mg.addExecution(new DefensePostExecution(this.structure!));
+        break;
+      case UnitType.Artillery:
+        this.mg.addExecution(new ArtilleryExecution(this.structure!));
         break;
       case UnitType.SAMLauncher:
         this.mg.addExecution(
@@ -177,6 +203,7 @@ export class ConstructionExecution implements Execution {
       case UnitType.Port:
       case UnitType.MissileSilo:
       case UnitType.DefensePost:
+      case UnitType.Artillery:
       case UnitType.SAMLauncher:
       case UnitType.City:
       case UnitType.Factory:

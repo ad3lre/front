@@ -208,6 +208,10 @@ export enum UnitType {
   MIRVWarhead = "MIRV Warhead",
   Train = "Train",
   Factory = "Factory",
+  CruiseMissile = "Cruise Missile",
+  Submarine = "Submarine",
+  Artillery = "Artillery",
+  Bomber = "Bomber",
 }
 
 export enum TrainType {
@@ -223,11 +227,22 @@ export const Nukes = unitTypeGroup([
   UnitType.MIRV,
 ] as const);
 
+/** Projectiles SAMs may intercept (nukes + cruise). MIRV carrier itself is excluded. */
+export const SamInterceptable = unitTypeGroup([
+  UnitType.AtomBomb,
+  UnitType.HydrogenBomb,
+  UnitType.MIRVWarhead,
+  UnitType.CruiseMissile,
+] as const);
+
 export const BuildableAttacks = unitTypeGroup([
   UnitType.AtomBomb,
   UnitType.HydrogenBomb,
   UnitType.MIRV,
   UnitType.Warship,
+  UnitType.CruiseMissile,
+  UnitType.Submarine,
+  UnitType.Bomber,
 ] as const);
 
 export const Structures = unitTypeGroup([
@@ -237,6 +252,26 @@ export const Structures = unitTypeGroup([
   UnitType.MissileSilo,
   UnitType.Port,
   UnitType.Factory,
+  UnitType.Artillery,
+] as const);
+
+/** Structures a cruise missile can disable then destroy. */
+export const CruiseMissileTargets = unitTypeGroup([
+  UnitType.DefensePost,
+  UnitType.SAMLauncher,
+  UnitType.MissileSilo,
+  UnitType.Artillery,
+] as const);
+
+/**
+ * New military shop units — off by default in public FFA and new lobbies.
+ * Enable via lobby toggles or the Military preset.
+ */
+export const ExperimentalMilitaryUnits = unitTypeGroup([
+  UnitType.CruiseMissile,
+  UnitType.Submarine,
+  UnitType.Artillery,
+  UnitType.Bomber,
 ] as const);
 
 export const BuildMenus = unitTypeGroup([

@@ -27,6 +27,7 @@ const INTERCEPTED_UNIT_TRANSLATION_KEYS: Partial<Record<UnitType, string>> = {
   [UnitType.AtomBomb]: "unit_type.atom_bomb",
   [UnitType.HydrogenBomb]: "unit_type.hydrogen_bomb",
   [UnitType.MIRVWarhead]: "unit_type.mirv",
+  [UnitType.CruiseMissile]: "unit_type.cruise_missile",
 };
 
 export class SAMMissileExecution implements Execution {
@@ -59,15 +60,18 @@ export class SAMMissileExecution implements Execution {
       this.active = false;
       return;
     }
-    // The MIRV carrier itself can't be intercepted, only its warheads
+    // The MIRV carrier itself can't be intercepted, only its warheads.
+    // Cruise missiles are also interceptable.
     const nukesWhitelist = [
       UnitType.AtomBomb,
       UnitType.HydrogenBomb,
       UnitType.MIRVWarhead,
+      UnitType.CruiseMissile,
     ];
     if (
       !this.target.isActive() ||
       !this.ownerUnit.isActive() ||
+      this.ownerUnit.isCruiseDisabled() ||
       this.target.owner() === this.SAMMissile.owner() ||
       !nukesWhitelist.includes(this.target.type())
     ) {

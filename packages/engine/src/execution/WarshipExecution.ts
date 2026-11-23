@@ -47,7 +47,11 @@ export class WarshipExecution implements Execution {
   private lastEmittedCombat = false;
 
   constructor(
-    private input: (UnitParams<UnitType.Warship> & OwnerComp) | Unit,
+    private input:
+      | (UnitParams<UnitType.Warship> & OwnerComp)
+      | (UnitParams<UnitType.Submarine> & OwnerComp)
+      | Unit,
+    private navalType: UnitType.Warship | UnitType.Submarine = UnitType.Warship,
   ) {}
 
   init(mg: Game, ticks: number): void {
@@ -56,19 +60,23 @@ export class WarshipExecution implements Execution {
     this.random = new PseudoRandom(mg.ticks());
     if (isUnit(this.input)) {
       this.warship = this.input;
+      const t = this.warship.type();
+      if (t === UnitType.Submarine || t === UnitType.Warship) {
+        this.navalType = t;
+      }
     } else {
       const spawn = this.input.owner.canBuild(
-        UnitType.Warship,
+        this.navalType,
         this.input.patrolTile,
       );
       if (spawn === false) {
         console.warn(
-          `Failed to spawn warship for ${this.input.owner.name()} at ${this.input.patrolTile}`,
+          `Failed to spawn ${this.navalType} for ${this.input.owner.name()} at ${this.input.patrolTile}`,
         );
         return;
       }
       this.warship = this.input.owner.buildUnit(
-        UnitType.Warship,
+        this.navalType,
         spawn,
         this.input,
       );
@@ -247,12 +255,29 @@ export class WarshipExecution implements Execution {
   }
 
   private findRetreatAggroTarget(): Unit | undefined {
-    return this.findBestTarget([UnitType.TransportShip, UnitType.Warship]);
+    return this.findBestTarget([
+      UnitType.TransportShip,
+      UnitType.Warship,
+      UnitType.Submarine,
+    ]);
   }
 
   private findTargetUnit(): Unit | undefined {
+    // Subs prioritize trade ships and warships; warships can also engage
+    // nearby submarines when inside detection range (filtered in findBestTarget).
+    if (this.navalType === UnitType.Submarine) {
+      return this.findBestTarget(
+        [UnitType.TradeShip, UnitType.TransportShip, UnitType.Warship],
+        true,
+      );
+    }
     return this.findBestTarget(
-      [UnitType.TransportShip, UnitType.Warship, UnitType.TradeShip],
+      [
+        UnitType.TransportShip,
+        UnitType.Warship,
+        UnitType.Submarine,
+        UnitType.TradeShip,
+      ],
       true,
     );
   }
@@ -296,12 +321,25 @@ export class WarshipExecution implements Execution {
         !owner.canAttackPlayer(unit.owner(), true) ||
         this.alreadySentShell.has(unit) ||
         (unit.type() === UnitType.Warship &&
+          unit.warshipState().state === "docked") ||
+        (unit.type() === UnitType.Submarine &&
           unit.warshipState().state === "docked")
       ) {
         continue;
       }
 
       const type = unit.type();
+
+      // Warships only detect submarines at short range (stealth).
+      if (
+        type === UnitType.Submarine &&
+        this.navalType === UnitType.Warship
+      ) {
+        const detect = config.submarineDetectionRange();
+        if (distSquared > detect * detect) {
+          continue;
+        }
+      }
 
       if (includeTradeShips && type === UnitType.TradeShip) {
         if (warshipComponent === undefined) {
@@ -337,7 +375,11 @@ export class WarshipExecution implements Execution {
       }
 
       const typePriority =
-        type === UnitType.TransportShip ? 0 : type === UnitType.Warship ? 1 : 2;
+        type === UnitType.TransportShip
+          ? 0
+          : type === UnitType.Warship || type === UnitType.Submarine
+            ? 1
+            : 2;
 
       if (
         bestUnit === undefined ||
@@ -848,6 +890,7 @@ export class WarshipExecution implements Execution {
             owner: w.player(this.input.owner),
             patrolTile: this.input.patrolTile,
           },
+      navalType: this.navalType,
       initialized: this.mg !== undefined,
       random: this.random === undefined ? null : w.random(this.random),
       warship: this.warship === undefined ? null : w.unit(this.warship),
@@ -869,6 +912,7 @@ export class WarshipExecution implements Execution {
       "unit" in s.input
         ? r.unit(s.input.unit)
         : { owner: r.player(s.input.owner), patrolTile: s.input.patrolTile };
+    this.navalType = s.navalType ?? UnitType.Warship;
     if (s.initialized) this.mg = r.game;
     if (s.random !== null) this.random = r.random(s.random);
     if (s.warship !== null) this.warship = r.unit(s.warship);
@@ -891,6 +935,8 @@ const WarshipExecutionStateSchema = z.object({
     z.object({ unit: zRef() }),
     z.object({ owner: zPlayerRef(), patrolTile: zTile() }),
   ]),
+  /** Optional for older snapshots; defaults to Warship. */
+  navalType: z.enum([UnitType.Warship, UnitType.Submarine]).optional(),
   initialized: z.boolean(),
   random: zRandom().nullable(),
   /** Null before init() or when the spawn failed. */

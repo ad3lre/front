@@ -201,8 +201,11 @@
   },
   "build_menu": {
     "desc": {
+      "artillery": "Auto-shells nearby enemy military buildings",
       "atom_bomb": "Small explosion",
+      "bomber": "Air raid that damages structures near the target",
       "city": "Increases max population",
+      "cruise_missile": "Disables enemy SAMs, silos and posts; second hit destroys",
       "defense_post": "Increases defenses of nearby borders",
       "factory": "Creates railroads and spawns trains",
       "hydrogen_bomb": "Large explosion",
@@ -210,6 +213,7 @@
       "missile_silo": "Used to launch nukes",
       "port": "Sends trade ships to generate gold",
       "sam_launcher": "Defends against incoming nukes",
+      "submarine": "Stealth naval unit that hunts trade ships and warships",
       "warship": "Captures trade ships, destroys ships and boats"
     },
     "not_enough_money": "Not enough money",
@@ -1166,6 +1170,8 @@
     "atom_bomb_detonated": "{name} - atom bomb detonated",
     "atom_bomb_inbound": "{name} - atom bomb inbound",
     "atom_bomb_inbound_count": "{name} - {count, plural, other {# atom bombs}} inbound",
+    "bomber_inbound": "{name} - bomber inbound",
+    "cruise_missile_inbound": "{name} - cruise missile inbound",
     "attack_cancelled_retreat": "Attack cancelled, {troops} soldiers killed during retreat",
     "attack_request": "{name} requests you attack {target}",
     "betrayal_debuff_ends": "{time} seconds left until betrayal debuff ends",
@@ -3121,9 +3127,12 @@
     "title": "Tutorial"
   },
   "unit_type": {
+    "artillery": "Artillery",
     "atom_bomb": "Atom Bomb",
     "boat": "Boat",
+    "bomber": "Bomber",
     "city": "City",
+    "cruise_missile": "Cruise Missile",
     "defense_post": "Defense Post",
     "factory": "Factory",
     "hydrogen_bomb": "Hydrogen Bomb",
@@ -3131,6 +3140,7 @@
     "missile_silo": "Missile Silo",
     "port": "Port",
     "sam_launcher": "SAM Launcher",
+    "submarine": "Submarine",
     "warship": "Warship"
   },
   "update_available": {
@@ -3181,8 +3191,11 @@
     "box_select_warships_desc": "Hold this key and drag to select multiple warships.",
     "break_alliance": "Break Alliance (Betray)",
     "break_alliance_desc": "Break alliance with the player whose tile is under your cursor.",
+    "build_artillery": "Build Artillery",
     "build_atom_bomb": "Build Atom Bomb",
+    "build_bomber": "Build Bomber",
     "build_city": "Build City",
+    "build_cruise_missile": "Build Cruise Missile",
     "build_controls": "Build Controls",
     "build_defense_post": "Build Defense Post",
     "build_factory": "Build Factory",
@@ -3196,6 +3209,7 @@
     "build_sam_launcher": "Build SAM Launcher",
     "build_scroll_modifier": "Build Scroll Modifier",
     "build_scroll_modifier_desc": "Hold this key and scroll to change build amount.",
+    "build_submarine": "Build Submarine",
     "build_warship": "Build Warship",
     "camera_movement": "Camera Movement",
     "center_camera": "Center Camera",

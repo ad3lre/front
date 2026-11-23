@@ -286,6 +286,13 @@ export class UnitPass {
         this.typeToAtlasCol.set(header.unitTypes[i], col);
       }
     }
+    // New military units reuse existing atlas columns until dedicated art ships.
+    const atomCol = UNIT_ORDER.indexOf(UT_ATOM_BOMB);
+    const warshipCol = UNIT_ORDER.indexOf(UT_WARSHIP);
+    const hydroCol = UNIT_ORDER.indexOf(UT_HYDROGEN_BOMB);
+    if (atomCol >= 0) this.typeToAtlasCol.set("Cruise Missile", atomCol);
+    if (warshipCol >= 0) this.typeToAtlasCol.set("Submarine", warshipCol);
+    if (hydroCol >= 0) this.typeToAtlasCol.set("Bomber", hydroCol);
 
     // Compile shaders
     this.program = createProgram(

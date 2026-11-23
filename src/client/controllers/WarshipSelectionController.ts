@@ -143,7 +143,7 @@ export class WarshipSelectionController implements Controller {
     const myPlayer = this.game.myPlayer();
     if (!myPlayer) return [];
     return this.game
-      .units(UnitType.Warship)
+      .units(UnitType.Warship, UnitType.Submarine)
       .filter(
         (unit) =>
           unit.isActive() &&
@@ -262,7 +262,9 @@ export class WarshipSelectionController implements Controller {
     const myPlayer = this.game.myPlayer();
     if (!myPlayer) return;
 
-    const selected = this.game.units(UnitType.Warship).filter((unit) => {
+    const selected = this.game
+      .units(UnitType.Warship, UnitType.Submarine)
+      .filter((unit) => {
       if (!unit.isActive() || unit.owner() !== myPlayer) return false;
       const screen = this.transformHandler.worldToScreenCoordinates(
         new Cell(this.game.x(unit.tile()), this.game.y(unit.tile())),
@@ -283,7 +285,7 @@ export class WarshipSelectionController implements Controller {
     const myPlayer = this.game.myPlayer();
     if (!myPlayer) return [];
     return this.game
-      .units(UnitType.Warship)
+      .units(UnitType.Warship, UnitType.Submarine)
       .filter((u) => u.isActive() && u.owner() === myPlayer);
   }
 
