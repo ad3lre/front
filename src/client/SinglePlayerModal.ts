@@ -146,12 +146,7 @@ const DEFAULT_OPTIONS = {
   goldMultiplierValue: undefined as number | undefined,
   startingGold: false,
   startingGoldValue: undefined as number | undefined,
-  disabledUnits: [
-    UnitType.CruiseMissile,
-    UnitType.Submarine,
-    UnitType.Artillery,
-    UnitType.Bomber,
-  ] as UnitType[],
+  disabledUnits: [] as UnitType[],
   customAlliances: false,
   customAllianceMinutes: undefined as number | undefined,
   waterNukes: false,

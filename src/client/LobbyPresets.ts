@@ -77,9 +77,8 @@ export const LobbyPresetSchema = z.object({
 export type LobbyPreset = z.infer<typeof LobbyPresetSchema>;
 
 /**
- * Built-in "Military" preset: enables Cruise Missile, Submarine, Artillery,
- * and Bomber (clears the default experimental-military disables). Callers
- * merge this into the player's preset list when seeding empty storage.
+ * Built-in "Military" preset (all units enabled — military + mine are on
+ * by default everywhere now; kept as a convenient named lobby preset).
  */
 export const MILITARY_LOBBY_PRESET: LobbyPreset = {
   name: "Military",
@@ -90,7 +89,6 @@ export const MILITARY_LOBBY_PRESET: LobbyPreset = {
     gameMode: GameMode.FFA,
     teamCount: 2,
     bots: 400,
-    // Empty disabledUnits = all units on, including the experimental military set.
     disabledUnits: [],
   },
 };

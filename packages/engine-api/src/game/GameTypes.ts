@@ -212,6 +212,7 @@ export enum UnitType {
   Submarine = "Submarine",
   Artillery = "Artillery",
   Bomber = "Bomber",
+  Mine = "Mine",
 }
 
 export enum TrainType {
@@ -253,6 +254,7 @@ export const Structures = unitTypeGroup([
   UnitType.Port,
   UnitType.Factory,
   UnitType.Artillery,
+  UnitType.Mine,
 ] as const);
 
 /** Structures a cruise missile can disable then destroy. */
@@ -263,10 +265,7 @@ export const CruiseMissileTargets = unitTypeGroup([
   UnitType.Artillery,
 ] as const);
 
-/**
- * New military shop units — off by default in public FFA and new lobbies.
- * Enable via lobby toggles or the Military preset.
- */
+/** Military shop units available in the normal build menu. */
 export const ExperimentalMilitaryUnits = unitTypeGroup([
   UnitType.CruiseMissile,
   UnitType.Submarine,

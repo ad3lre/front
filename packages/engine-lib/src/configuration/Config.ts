@@ -238,6 +238,9 @@ export class Config {
       case UnitType.Artillery:
         info = { constructionDuration: this.instantBuild() ? 0 : 5 * 10 };
         break;
+      case UnitType.Mine:
+        info = { constructionDuration: this.instantBuild() ? 0 : 2 * 10 };
+        break;
       case UnitType.SAMLauncher:
         info = {
           constructionDuration: this.instantBuild()
@@ -459,6 +462,11 @@ export class Config {
 
   cruiseDisableDuration(): number {
     return 30 * 10; // 30 seconds
+  }
+
+  /** Gold paid each tick by one active Mine (before gold multiplier). */
+  mineGoldPerTick(): number {
+    return 8_000;
   }
 
   nukeAllianceBreakThreshold(): number {

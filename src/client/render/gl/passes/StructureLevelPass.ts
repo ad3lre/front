@@ -170,7 +170,9 @@ export class StructureLevelPass {
       if (col >= 0) this.typeToAtlasCol.set(header.unitTypes[i], col);
     }
     const defpCol = STRUCTURE_ORDER.indexOf("Defense Post");
+    const cityCol = STRUCTURE_ORDER.indexOf("City");
     if (defpCol >= 0) this.typeToAtlasCol.set("Artillery", defpCol);
+    if (cityCol >= 0) this.typeToAtlasCol.set("Mine", cityCol);
 
     this.kernTable = new Int8Array(CHAR_RANGE * CHAR_RANGE); // digits don't kern
 

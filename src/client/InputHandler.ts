@@ -660,6 +660,7 @@ export class InputHandler {
       "buildSubmarine",
       "buildArtillery",
       "buildBomber",
+      "buildMine",
     ];
     buildKeybinds = buildKeybinds.map((i: string): string => {
       return this.keybinds[i];
@@ -1917,6 +1918,7 @@ export class InputHandler {
       { key: "buildSubmarine", type: UnitType.Submarine },
       { key: "buildArtillery", type: UnitType.Artillery },
       { key: "buildBomber", type: UnitType.Bomber },
+      { key: "buildMine", type: UnitType.Mine },
     ];
     for (const { key, type } of buildKeybinds) {
       if (this.keybindMatchesEvent({ code, shiftKey }, this.keybinds[key]))

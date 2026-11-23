@@ -115,6 +115,15 @@ describe("Military shop units", () => {
     expect(postTile).toBeDefined();
   });
 
+  test("Mine boosts goldAdditionRate", () => {
+    const without = game.config().goldAdditionRate(attacker);
+    attacker.buildUnit(UnitType.Mine, game.ref(6, 6), {});
+    const withMine = game.config().goldAdditionRate(attacker);
+    expect(withMine - without).toBe(
+      BigInt(game.config().mineGoldPerTick()),
+    );
+  });
+
   test("Bomber destroys an enemy city near the target", () => {
     const cityTile = game.ref(8, 8);
     attacker.buildUnit(UnitType.City, cityTile, {});

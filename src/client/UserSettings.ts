@@ -47,6 +47,7 @@ export function getDefaultKeybinds(isMac: boolean): Record<string, string> {
     buildSubmarine: "F7",
     buildArtillery: "F8",
     buildBomber: "F9",
+    buildMine: "F10",
     attackRatioDown: "KeyT",
     attackRatioUp: "KeyY",
     boatAttack: "KeyB",

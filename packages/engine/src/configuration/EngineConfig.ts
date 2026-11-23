@@ -398,6 +398,12 @@ export class EngineConfig extends Config {
           (numUnits: number) => Math.min(400_000, (numUnits + 1) * 80_000),
           UnitType.Artillery,
         );
+      case UnitType.Mine:
+        // Cheap early economy building: first mine is 25k, then soft scale.
+        return this.costWrapper(
+          (numUnits: number) => Math.min(150_000, (numUnits + 1) * 25_000),
+          UnitType.Mine,
+        );
       case UnitType.SAMLauncher:
         return this.costWrapper(
           (numUnits: number) => Math.min(3_000_000, (numUnits + 1) * 1_500_000),
@@ -694,13 +700,20 @@ export class EngineConfig extends Config {
 
   goldAdditionRate(player: PlayerLike): Gold {
     const multiplier = this.goldMultiplierFor(player);
-    let baseRate: bigint;
+    let baseRate: number;
     if (player.type() === PlayerType.Bot) {
-      baseRate = 50n;
+      baseRate = 50;
     } else {
-      baseRate = 100n;
+      baseRate = 100;
     }
-    return BigInt(Math.floor(Number(baseRate) * multiplier));
+    // Active mines (not under construction) pay a large flat trickle.
+    let mineIncome = 0;
+    for (const mine of player.units(UnitType.Mine)) {
+      if (mine.isActive() && !mine.isUnderConstruction()) {
+        mineIncome += this.mineGoldPerTick();
+      }
+    }
+    return BigInt(Math.floor((baseRate + mineIncome) * multiplier));
   }
 
   nukeSpeed(unitType: UnitType): number {

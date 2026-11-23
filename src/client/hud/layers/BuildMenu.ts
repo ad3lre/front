@@ -105,6 +105,13 @@ const buildTable: BuildItemDisplay[][] = [
       countable: true,
     },
     {
+      unitType: UnitType.Mine,
+      icon: goldCoinIcon,
+      description: "build_menu.desc.mine",
+      key: "unit_type.mine",
+      countable: true,
+    },
+    {
       unitType: UnitType.Port,
       icon: portIcon,
       description: "build_menu.desc.port",

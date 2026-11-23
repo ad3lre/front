@@ -149,9 +149,11 @@ export class StructurePass {
         this.typeToAtlasCol.set(header.unitTypes[i], col);
       }
     }
-    // Artillery reuses the Defense Post atlas column until dedicated art ships.
+    // New structures reuse existing atlas columns until dedicated art ships.
     const defpCol = STRUCTURE_ORDER.indexOf(UT_DEFENSE_POST);
+    const cityCol = STRUCTURE_ORDER.indexOf(UT_CITY);
     if (defpCol >= 0) this.typeToAtlasCol.set("Artillery", defpCol);
+    if (cityCol >= 0) this.typeToAtlasCol.set("Mine", cityCol);
 
     // Compile shaders
     this.program = createProgram(

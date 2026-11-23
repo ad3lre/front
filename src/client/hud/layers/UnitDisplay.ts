@@ -62,6 +62,7 @@ export class UnitDisplay extends LitElement implements Controller {
   private _warships = 0;
   private _submarines = 0;
   private _artillery = 0;
+  private _mines = 0;
   private _factories = 0;
   private _missileSilo = 0;
   private _port = 0;
@@ -604,6 +605,7 @@ export class UnitDisplay extends LitElement implements Controller {
     this._warships = player.totalUnitLevels(UnitType.Warship);
     this._submarines = player.totalUnitLevels(UnitType.Submarine);
     this._artillery = player.totalUnitLevels(UnitType.Artillery);
+    this._mines = player.totalUnitLevels(UnitType.Mine);
     this.requestUpdate();
   }
 
@@ -709,6 +711,13 @@ export class UnitDisplay extends LitElement implements Controller {
               UnitType.Artillery,
               "artillery",
               this.getHotkey("buildArtillery", "F8"),
+            )}
+            ${this.renderUnitItem(
+              goldCoinIcon,
+              this._mines,
+              UnitType.Mine,
+              "mine",
+              this.getHotkey("buildMine", "F10"),
             )}
             ${this.renderUnitItem(
               atomBombIcon,
