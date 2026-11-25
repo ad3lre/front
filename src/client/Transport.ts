@@ -61,6 +61,7 @@ import {
 import { LocalServer } from "./LocalServer";
 import { SchoolPollSocket } from "./SchoolPollSocket";
 import {
+  clearPollTransportLatch,
   latchPollTransport,
   readSchoolTransportMode,
   shouldStartWithPoll,
@@ -744,6 +745,8 @@ export class Transport {
     console.log(
       `reconnect attempt ${this.reconnectAttempts}/${Transport.RECONNECT_MAX_ATTEMPTS} in ${delay} ms`,
     );
+    // Prefer WebSocket again on each reconnect — do not stay latched on poll.
+    clearPollTransportLatch();
     this.reconnectTimeout = window.setTimeout(() => {
       this.reconnectTimeout = null;
       this.connectRemote(this.onconnect, this.onmessage);

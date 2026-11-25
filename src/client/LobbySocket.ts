@@ -11,6 +11,7 @@ import {
 } from "./ServerList";
 import { SchoolPollSocket } from "./SchoolPollSocket";
 import {
+  clearPollTransportLatch,
   latchPollTransport,
   readSchoolTransportMode,
   shouldStartWithPoll,
@@ -426,6 +427,8 @@ export class PublicLobbySocket {
 
   private scheduleReconnect(rediscover = false) {
     if (this.wsReconnectTimeout !== null) return;
+    // Prefer WebSocket again on each reconnect — do not stay latched on poll.
+    clearPollTransportLatch();
     this.wsReconnectTimeout = window.setTimeout(() => {
       this.wsReconnectTimeout = null;
       // A slow re-dial rediscovers too: by now the list may name another
