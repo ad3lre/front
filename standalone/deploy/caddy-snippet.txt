@@ -10,12 +10,21 @@ handle @front_api {
   uri strip_prefix /front/backend
   reverse_proxy 127.0.0.1:13802
 }
+# Worker carries the game/lobby WebSockets and school-safe HTTP long-poll.
+# Same no-timeout transport as the other multiplayer games on this host —
+# without it, idle proxy deadlines can drop sockets and look like
+# periodic "network down" → reconnect loops in the client.
 @front_worker path /front/w0 /front/w0/*
 handle @front_worker {
   uri strip_prefix /front/w0
   reverse_proxy 127.0.0.1:13801 {
     header_up CF-Connecting-IP {remote_host}
     flush_interval -1
+    transport http {
+      read_timeout 0
+      write_timeout 0
+      dial_timeout 10s
+    }
   }
 }
 handle /front/api/create_game {

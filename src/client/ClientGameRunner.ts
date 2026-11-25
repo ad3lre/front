@@ -1733,7 +1733,10 @@ export class ClientGameRunner {
     }
     const now = Date.now();
     const timeSinceLastMessage = now - this.lastMessageTime;
-    if (timeSinceLastMessage > 5000) {
+    // Must sit above a couple of ping intervals (5s) plus mobile RTT jitter.
+    // At exactly ~5s, a single delayed pong looks like a dead link and the
+    // UI flaps "Reconnecting…" even though the socket is fine.
+    if (timeSinceLastMessage > 15_000) {
       console.log(
         `No message from server for ${timeSinceLastMessage} ms, reconnecting`,
       );

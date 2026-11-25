@@ -9,7 +9,10 @@ export type SchoolTransportMode = "auto" | "poll" | "ws";
 const STORAGE_KEY = "settings.schoolTransport";
 const LEGACY_KEY = "front.transport";
 
-export const WS_OPEN_TIMEOUT_MS = 1_200;
+// Cellular / CGNAT paths often need >1s before Upgrade completes. A too-low
+// value falsely latches school-poll for the rest of the tab and the in-game
+// watchdog then flaps "Reconnecting…" on every jittery poll gap.
+export const WS_OPEN_TIMEOUT_MS = 3_000;
 
 export function readSchoolTransportMode(): SchoolTransportMode {
   try {
